@@ -1,0 +1,168 @@
+<%- include('../layouts/admin/header.ejs') %>
+<%- include('../layouts/admin/sidebar.ejs', { currentPage: 'products' }) %>
+
+<div class="products-container">
+    <div class="products-header">
+        <div class="header-left">
+            <h2>All Products</h2>
+            <p>Home > All Products</p>
+        </div>
+        <div class="header-right">
+            <form id="filter-form" method="GET" action="/admin/products" class="filter-form">
+                <input type="text" name="search" value="<%= search %>" placeholder="Search products..." class="search-box">
+                <select name="date" class="filter-select">
+                    <option value="">Select Date</option>
+                    <% dates.forEach(date => { %>
+                        <option value="<%= date %>" <%= date === selectedDate ? 'selected' : '' %>><%= date %></option>
+                    <% }); %>
+                </select>
+                <select name="category" class="filter-select">
+                    <option value="">Select Category</option>
+                    <% category.forEach(cat => { %>
+                        <option value="<%= cat._id %>" <%= cat._id.toString() === selectedCategory ? 'selected' : '' %>><%= cat.name %></option>
+                    <% }); %>
+                </select>
+                <button type="submit" class="filter-btn"><i class="fas fa-filter"></i> Apply</button>
+            </form>
+            <button class="add-product-btn" onclick="window.location.href='/admin/addProducts'">
+                <i class="fas fa-plus"></i> ADD NEW PRODUCT
+            </button>
+        </div>
+    </div>
+
+    <div class="products-grid">
+        <% products.forEach(product => { %>
+            <div class="product-card">
+                <div class="product-image">
+                    <img src="/img/products/<%= product.productImage[0] %>" alt="<%= product.productName %>">
+                    <a href="/admin/editProduct/<%= product._id %>" class="edit-button"><i class="fas fa-edit"></i></a>
+                </div>
+                <div class="product-info">
+                    <h3><%= product.productName %></h3>
+                    <p class="category">Category: <%= product.category ? product.category.name : 'No Category' %></p>
+                    <p class="price">₹ <%= parseInt(product.salePrice) %> <span class="original-price">₹ <%= product.realPrice %></span></p>
+                    <div class="controls">
+                        <% if (product.productOffer) { %>
+                            <span class="offer-badge"><i class="fas fa-gift"></i> <%= product.productOffer %>%</span>
+                        <% } else { %>
+                            <span class="offer-badge">No Offer</span>
+                        <% } %>
+                        <% if (product.isBlocked) { %>
+                            <button class="btn btn-danger" onclick="unblockProduct('<%= product._id %>')"><i class="fas fa-unlock"></i> Unblock</button>
+                        <% } else { %>
+                            <button class="btn btn-warning" onclick="blockProduct('<%= product._id %>')"><i class="fas fa-lock"></i> Block</button>
+                        <% } %>
+                    </div>
+                    <div class="product-stats">
+                        <p>Brand: <strong><%= product.brand ? product.brand.brandName : 'No Brand' %></strong></p>
+                        <p>Stock: <strong><%= product.quantity %></strong></p>
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+    </div>
+
+    <div class="pagination-container">
+        <ul class="pagination">
+            <% for (let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= (currentPage === i) ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %>&search=<%= search %>&date=<%= selectedDate %>&category=<%= selectedCategory %>"><%= i %></a>
+                </li>
+            <% } %>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .products-container { padding: 20px; background: #f8f9fa; }
+    .products-header { display: flex; justify-content: space-between; align-items: center; }
+    .filter-form { display: flex; gap: 10px; }
+    .search-box, .filter-select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    .add-product-btn { background: #4070f4; color: white; border-radius: 5px; padding: 10px; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .product-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .product-image img { width: 100%; border-radius: 5px; }
+    .edit-button { position: absolute; top: 10px; right: 10px; background: #ffc107; padding: 5px 10px; }
+    .price { font-weight: bold; color: #28a745; }
+    .original-price { text-decoration: line-through; color: #6c757d; font-size: 0.9rem; }
+    .offer-badge { background: #ffc107; padding: 3px 8px; border-radius: 3px; color: white; }
+    .pagination-container { margin-top: 20px; }
+    .pagination { display: flex; gap: 10px; justify-content: center; }
+    .pagination .page-item.active .page-link { background: #4070f4; color: white; }
+    .product-image {
+    position: relative;
+    padding: 20px;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.product-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.edit-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.edit-button:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.edit-button a {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+.products-container {
+    padding: 20px;
+    margin-left: 250px; /* Make sure this matches the sidebar width */
+    width: calc(100% - 250px); /* Adjust width so it doesn't overlap */
+    background: #f8f9fa;
+    min-height: 100vh;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+@media (max-width: 768px) {
+    .products-container {
+        margin-left: 0;
+        width: 100%; /* Full width for small screens */
+    }
+}
+
+    @media (max-width: 768px) {
+        .products-header { flex-direction: column; }
+        .filter-form { flex-direction: column; width: 100%; }
+    }
+
+</style>
+
+<script>
+    function blockProduct(productId) {
+        fetch(`/admin/blockProduct/${productId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => { alert(data.message); location.reload(); })
+            .catch(error => alert('Error occurred'));
+    }
+    function unblockProduct(productId) {
+        fetch(`/admin/unBlockProduct/${productId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => { alert(data.message); location.reload(); })
+            .catch(error => alert('Error occurred'));
+    }
+</script>
+
+<%- include('../layouts/admin/footer.ejs') %>

@@ -1,0 +1,123 @@
+<%- include('../layouts/admin/header.ejs') %>
+<%- include('../layouts/admin/sidebar.ejs', {currentPage: 'users'}) %>
+
+<div class="users-container">
+    <div class="users-header">
+        <h2>Users</h2>
+        <div class="search-and-filter">
+            <form method="GET" action="/admin/users" class="search-form">
+                <input type="text" name="search" placeholder="Search by name or email" value="<%= search %>" class="search-input"/>
+                <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+            </form>
+            <div class="filter-section">
+                <form method="get" action="/admin/users" id="filterForm">
+                    <input type="hidden" name="search" value="<%= search %>">
+                    <input type="hidden" name="page" value="<%= page %>">
+                    <select name="status" id="statusFilter" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+                        <option value="" <%= !status ? 'selected' : '' %>>All</option>
+                        <option value="active" <%= status === 'active' ? 'selected' : '' %>>Active</option>
+                        <option value="blocked" <%= status === 'blocked' ? 'selected' : '' %>>Blocked</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-wrapper">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% data.forEach((user, index) => { %>
+                <tr data-user-id="<%= user._id %>">
+                    <td><%= index + 1 %></td>
+                    <td><%= user.name %></td>
+                    <td><%= user.email %></td>
+                    <td>
+                        <% if (!user.isBlocked) { %>
+                            <button class="btn btn-danger block-btn">Block</button>
+                        <% } else { %>
+                            <button class="btn btn-success unblock-btn">Unblock</button>
+                        <% } %>
+                        <button class="btn btn-warning delete-btn">Delete</button>
+                    </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="pagination-container">
+        <ul class="pagination">
+            <% for(let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= (currentPage === i) ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                </li>
+            <% } %>
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.block-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.closest('tr').getAttribute('data-user-id');
+                window.location.href = `/admin/blockCustomer?id=${userId}`;
+            });
+        });
+        document.querySelectorAll('.unblock-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.closest('tr').getAttribute('data-user-id');
+                window.location.href = `/admin/unBlockCustomer?id=${userId}`;
+            });
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.closest('tr').getAttribute('data-user-id');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = `/admin/deleteCustomer?id=${userId}`;
+                    }
+                });
+            });
+        });
+    });
+</script>
+
+<style>
+    .users-container { padding: 20px; background: #f8f9fa; }
+    .users-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .users-header h2 { color: #333; font-size: 24px; }
+    .search-form { display: flex; align-items: center; gap: 10px; }
+    .search-input, .filter-select { padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; }
+    .search-btn, .filter-select { cursor: pointer; }
+    .table-wrapper { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .users-table { width: 100%; border-collapse: collapse; }
+    th { background: #4070f4; color: white; padding: 15px; }
+    td { padding: 15px; border-bottom: 1px solid #eee; }
+    .btn { padding: 5px 15px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+    .btn-danger { background-color: #dc3545; color: white; }
+    .btn-success { background-color: #28a745; color: white; }
+    .btn-warning { background-color: #ffc107; color: white; }
+    .pagination { display: flex; gap: 5px; justify-content: center; padding: 10px; }
+    .page-item { list-style: none; }
+    .page-link { padding: 8px 12px; background: #eee; border-radius: 4px; text-decoration: none; color: #333; }
+    .page-item.active .page-link { background: #4070f4; color: white; }
+</style>
+
+<%- include('../layouts/admin/footer.ejs') %>

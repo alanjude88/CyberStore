@@ -1,0 +1,781 @@
+<%- include('../layouts/user/header.ejs') %>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f5ff;
+      color: #3e0a77;
+      margin: 0;
+      padding: 0;
+    }
+
+    .checkout-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .checkout-header {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #3e0a77;
+      font-size: 2rem;
+    }
+
+    .card {
+      background-color: #fff;
+      border: 2px solid #d0b4ff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      font-size: 1.5rem;
+      color: #3e0a77;
+      margin-bottom: 10px;
+    }
+
+    .card-content p {
+      margin: 10px 0;
+      font-size: 1rem;
+      color: #6e3bbb;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .button-edit,
+    .button-select,
+    .button-add {
+      background-color: #6e3bbb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .button-edit:hover,
+    .button-select:hover,
+    .button-add:hover {
+      background-color: #3e0a77;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .cart-item img {
+      height: 80px;
+      width: auto;
+      border-radius: 8px;
+      border: 1px solid #d0b4ff;
+    }
+
+    .cart-summary {
+      border-top: 2px solid #d0b4ff;
+      padding-top: 20px;
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+
+    .checkout-actions {
+      text-align: right;
+    }
+
+    .button-confirm {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      margin-top: 20px;
+      border-radius: 5px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .button-confirm:hover {
+      background-color: #218838;
+    }
+
+    input[type="radio"] {
+      margin-right: 10px;
+    }
+
+    select {
+      padding: 8px;
+      border: 1px solid #d0b4ff;
+      border-radius: 5px;
+      background-color: #f2e8ff;
+      color: #3e0a77;
+      outline: none;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .button-container {
+        flex-direction: column;
+      }
+
+      .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cart-item img {
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+
+  <div class="checkout-page">
+    <h1 class="checkout-header">Order Confirmation</h1>
+
+    <div class="card">
+      <div class="card-header">Customer Information</div>
+      <div class="card-content">
+        <p>Name: <%= user.name %>
+        </p>
+        <p>Email: <%= user.email %>
+        </p>
+      </div>
+    </div>
+
+    <form id="checkout-form" method="POST" action="/placeOrders" onsubmit="placeOrder(event)">
+      <div class="card">
+        <div class="card-header">Delivery Address</div>
+        <div class="card-content">
+          <div class="button-container">
+            <a href="/profile/addresses/editAddress/<%= defaultAddress ? defaultAddress._id : '' %>"
+              class="button-edit">Edit Address</a>
+            <select name="selectedAddressId">
+              <% addresses.forEach(address=> { %>
+                <option value="<%= address._id %>" <%=defaultAddress && defaultAddress._id.equals(address._id)
+                  ? 'selected' : '' %>>
+                  <%= address.addressType %>, <%= address.city %>, <%= address.state %>, <%= address.pincode %>
+                </option>
+                <% }); %>
+            </select>
+            <a href="/profile/addresses/addNewAddress" class="button-add">Add New Address</a>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <div class="card-header">Order Summary</div>
+        <div class="card-content">
+          <% cart.items.forEach(item=> { %>
+            <div class="cart-item">
+              <img src="/img/products/<%= item.productId?.productImage?.[0] || 'default.png' %>"
+                alt="<%= item.productId?.productName || 'Product Image' %>"
+                style="width: 150px; height: auto; border-radius: 5px;">
+              <div>
+                <h2>
+                  <%= item.productId.productName %>
+                </h2>
+                <p>Quantity: <%= item.quantity %>
+                </p>
+                <p>Price: ₹<%= item.totalPrice %>
+                </p>
+              </div>
+            </div>
+            <% }) %>
+              <div class="cart-summary">
+                <p>Total Amount: ₹<%= cart.totalAmount %>
+                </p>
+                <p>Discount: ₹<%= cart.discount %>
+                </p>
+                <p>deliveryCharge: ₹<%= cart.deliveryCharge %>
+                </p>
+                <p>Coupon Reduction: ₹<%= cart.couponReduction %>
+                </p>
+                <p>Final Amount: ₹<%= cart.finalAmount %>
+                </p>
+              </div>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <div class="card-header">Payment Options</div>
+        <div class="card-content">
+          <label><input type="radio" name="paymentMethod" value="COD" required> Cash on Delivery</label>
+          <label><input type="radio" name="paymentMethod" value="Razorpay" required> Razorpay</label>
+          <label><input type="radio" name="paymentMethod" value="Wallet" required> Wallet Payment</label>
+          <div class="checkout-actions">
+            <button id="confirmOrder" class="button-confirm">Confirm Order</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <%- include('../layouts/user/footer.ejs') %>
+
+  <script>
+    document.getElementById('confirmOrder').addEventListener('click', function (event) {
+  event.preventDefault();
+  const form = document.getElementById('checkout-form');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData.entries());
+  const paymentMethod = data.paymentMethod;
+  var razorpayIdKey = '<%= process.env.RAZORPAY_ID_KEY %>';
+
+  if (paymentMethod === 'COD') {
+    if(parseFloat(data.finalAmount) > 10000){
+      Swal.fire({
+        title: "Error",
+        text: 'Cash on Delivery is not allowed for orders above ₹10,000',
+        icon: 'error',
+        timer: 2000
+      });
+      return;
+    }
+    fetch('/placeOrders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire({
+            title: 'Success',
+            text: data.message,
+            icon: 'success',
+            timer: 3000
+          }).then(() => {
+            window.location.href = '/profile/orders';
+          });
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: data.message,
+            icon: 'error',
+            timer: 3000
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'An error occurred while placing the order',
+          icon: 'error',
+          timer: 3000
+        });
+      });
+  }
+
+  else if (paymentMethod === 'Razorpay') {
+    fetch('/placeOrders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => response.json())
+      .then(order => {
+        if (!razorpayIdKey) {
+          console.error('Razorpay Key is not set.');
+          Swal.fire({
+            title: 'Error',
+            text: 'Payment gateway key is missing',
+            icon: 'error',
+            timer: 2000
+          });
+          return;
+        }
+
+        if (!order.razorpayOrderId) {
+          Swal.fire({
+            title: 'Error',
+            text: 'Razorpay order ID is missing',
+            icon: 'error',
+            timer: 2000
+          });
+          return;
+        }
+
+        var options = {
+          key: razorpayIdKey,
+          amount: Math.round(order.finalAmount * 100),
+          currency: 'INR',
+          name: 'CyberCrate',
+          description: 'Order Payment',
+          order_id: order.razorpayOrderId,
+
+          handler: function (response) {
+            if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+              Swal.fire({
+                title: 'Error',
+                text: 'The payment response is incomplete, try again',
+                icon: 'error',
+                timer: 3000
+              });
+              return;
+            }
+
+            fetch('/verifyPayment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                payment_status: 'Success'
+              })
+            })
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === "success") {
+                  Swal.fire({
+                    title: 'Success',
+                    text: data.message,
+                    icon: 'success',
+                    timer: 2000
+                  }).then(() => {
+                    window.location.href = '/profile/orders';
+                  });
+                } else {
+                  Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Payment verification has failed',
+                    icon: 'error',
+                    timer: 3000
+                  }).then(() => {
+                    window.location.href = '/profile/orders';
+                  });
+                }
+              })
+              .catch(error => {
+                console.error('Error in verification:', error);
+                Swal.fire({
+                  title: 'Error',
+                  text: 'An error occurred while verifying payment, contact the support team',
+                  icon: 'error',
+                  timer: 3000
+                });
+              });
+          }
+        };
+
+        var rzp1 = new Razorpay(options);
+        let isPaymentProcessing = false;
+
+        rzp1.on('payment.failed', function (response) {
+          if (isPaymentProcessing) return;
+          isPaymentProcessing = true;
+          console.error('Payment failed:', response.error);
+
+          fetch('/verifyPayment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.error.metadata.order_id,
+              razorpay_payment_id: response.error.metadata.payment_id,
+              razorpay_signature: '',  // Failed payments won't have a signature
+              payment_status: 'Failed',
+              error_code: response.error.code,
+              error_description: response.error.description
+            })
+          })
+            .then(res => res.json())
+            .then(data => {
+              return Swal.fire({
+                title: 'Payment Failed',
+                text: response.error.description || 'Payment failed. Please try again.',
+                icon: 'error',
+                timer: 3000
+              });
+            })
+            .then(() => {
+              window.location.href = '/profile/orders';
+            })
+            .catch(error => {
+              console.error('Error handling failed payment:', error);
+              return Swal.fire({
+                title: 'Payment Failed',
+                text: 'An error occurred during the payment process.',
+                icon: 'error',
+                timer: 3000
+              }).then(() => {
+                window.location.href = '/profile/orders';
+              });
+            })
+            .finally(() => {
+              isPaymentProcessing = false;
+            });
+        });
+
+        rzp1.open();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'An error occurred while initializing payment',
+          icon: 'error',
+          timer: 3000
+        });
+      });
+  }
+
+  else if (paymentMethod === 'Wallet') {
+    fetch('/placeOrders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+      .then((response) => {
+        console.log('Response:', response);
+        return response.json();
+      })
+      .then((data) => {
+        console.log('Backend Response:', data);
+        if (data.success) {
+          Swal.fire({
+            title: 'Success',
+            text: data.message,
+            icon: 'success',
+            timer: 3000
+          }).then(() => {
+            window.location.href = '/profile/orders';
+          });
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: data.message,
+            icon: 'error',
+            timer: 3000
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'An error occurred while placing the order',
+          icon: 'error',
+          timer: 3000
+        });
+      });
+  }
+});
+
+document.getElementById('checkout-form').addEventListener('submit', function (event) {
+  const address = document.querySelector('select[name="selectedAddressId"]').value;
+  const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+  if (!address) {
+    event.preventDefault();
+    Swal.fire('Please select a delivery address.');
+  }
+  if (!paymentMethod) {
+    event.preventDefault();
+    Swal.fire('Please select a payment method.');
+  }
+});
+  </script>
+
+
+    <!-- <script>
+      document.getElementById('confirmOrder').addEventListener('click', function (event) {
+        event.preventDefault();
+        const form = document.getElementById('checkout-form');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        const paymentMethod = data.paymentMethod;
+        var razorpayIdKey = '<%= process.env.RAZORPAY_ID_KEY %>';
+
+        if (paymentMethod === 'COD') {
+          if (parseFloat(data.finalAmount) > 10000) {
+            Swal.fire({
+              title: "Error",
+              text: 'Cash on Delivery is not allowed for orders above ₹10,000',
+              icon: 'error',
+              timer: 2000
+            })
+          }
+          fetch('/placeOrders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                Swal.fire({
+                  title: 'Success',
+                  text: data.message,
+                  icon: 'success',
+                  timer: 3000
+                }).then(() => {
+                  window.location.href = '/profile/orders';
+                });
+              } else {
+                Swal.fire({
+                  title: 'Error',
+                  text: data.message,
+                  icon: 'error',
+                  timer: 3000
+                });
+              }
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              Swal.fire({
+                title: 'Error',
+                text: 'An error occurred while placing the order',
+                icon: 'error',
+                timer: 3000
+              });
+            });
+
+        }
+
+        else if (paymentMethod === 'Razorpay') {
+          fetch('/placeOrders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+            .then(response => response.json())
+            .then(order => {
+
+              if (!razorpayIdKey) {
+                console.error('Razorpay Key is not set.');
+                Swal.fire({
+                  title: 'Error',
+                  text: 'Payment gateway key is missing',
+                  icon: 'error',
+                  timer: 2000
+                });
+                return;
+              }
+
+              console.log('Order:--------------------------------------------------------------', order, '--------i', order.razorpayOrderId);
+
+              if (!order.razorpayOrderId) {
+                Swal.fire({
+                  title: 'Error',
+                  text: 'Razorpay order ID is missing',
+                  icon: 'error',
+                  timer: 2000
+                });
+                return;
+              }
+              var options = {
+                key: razorpayIdKey,
+                amount: Math.round(order.finalAmount * 100),
+                currency: 'INR',
+                name: 'CyberCrate',
+                description: 'Order Payment',
+                order_id: order.razorpayOrderId,
+
+
+                handler: function (response) {
+                  // console.log('fr----Razorpay Response:-', response);
+                  if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+                    Swal.fire({
+                      title: 'Error',
+                      text: 'The payment response is incomplete,try again',
+                      icon: 'error',
+                      timer: 3000
+                    })
+                    return
+                  }
+
+                  fetch('/verifyPayment', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature
+                    })
+                  })
+                    // console.log("jj---------------",razorpay_order_id,razorpay_payment_id,razorpay_signature,'--------')
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.status === "success") {
+                        Swal.fire({
+                          title: 'Success',
+                          text: data.message,
+                          icon: 'success',
+                          timer: 2000
+                        }).then(() => {
+                          window.location.href = '/profile/orders';
+                        });
+                      } else {
+                        Swal.fire({
+                          title: 'Error',
+                          text: data.message || 'Payment verification has failed',
+                          icon: 'error',
+                          timer: 3000
+                        }).then(() => {
+                          window.location.href = '/profile/orders';
+                        })
+                      }
+                    })
+                    .catch(error => {
+                      console.error('Fr----Error in verification:', error);
+                      Swal.fire({
+                        title: 'Error',
+                        text: 'An error occurred while verifying payment,contact the support team',
+                        icon: 'error',
+                        timer: 3000
+                      });
+                    });
+                },
+              };
+              var rzp1 = new Razorpay(options);
+
+              let isPaymentProcessing = false;
+
+              rzp1.on('payment.failed', function (response) {
+                console.error('Payment failed:', response.error);
+                if (isPaymentProcessing) return;
+                isPaymentProcessing = true;
+                console.error('Payment failed:', response.error);
+
+                fetch('/verifyPayment', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    razorpay_order_id: response.error.metadata.order_id,
+                    razorpay_payment_id: response.error.metadata.payment_id,
+                    razorpay_signature: '',  // Failed payments won't have a signature
+                    payment_status: 'Failed',
+                    error_code: response.error.code,
+                    error_description: response.error.description
+                  })
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                    Swal.fire({
+                      title: 'Payment Failed',
+                      text: response.error.description || 'Payment failed. Please try again.',
+                      icon: 'error',
+                      timer: 3000
+                    })
+                      .then(() => {
+                        window.location.href = '/profile/orders';
+                      })
+                  })
+                  .catch(error => {
+                    Swal.fire({
+                      title: 'Payment Failed',
+                      text: response.error.description || 'An error occurred during the payment process.',
+                      icon: 'error',
+                      timer: 3000
+                    });
+                  })
+                  .finally(() => {
+                    isPaymentProcessing = false;
+                  });
+              });
+              rzp1.open();
+            })
+            .catch(error => {
+              console.error('Error:',error)
+              Swal.fire({
+                title: 'Error',
+                text: 'An error occurred while initializing payment',
+                icon: 'error',
+                timer: 3000
+              })
+            });
+        }
+
+        else if (paymentMethod === 'Wallet') {
+          fetch('/placeOrders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          })
+            .then((response) => {
+              console.log('Response:', response);
+              return response.json();
+            })
+
+            .then((data) => {
+              console.log('Backend Response:', data);
+              if (data.success) {
+                Swal.fire({
+                  title: 'Success',
+                  text: data.message,
+                  icon: 'success',
+                  timer: 3000
+                }).then(() => {
+                  window.location.href = '/profile/orders';
+                });
+              } else {
+                Swal.fire({
+                  title: 'Error',
+                  text: data.message,
+                  icon: 'error',
+                  timer: 3000
+                });
+              }
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+              Swal.fire({
+                title: 'Error',
+                text: 'An error occurred while placing the order',
+                icon: 'error',
+                timer: 3000
+              });
+            });
+        }
+      });
+
+
+
+      document.getElementById('checkout-form').addEventListener('submit', function (event) {
+        const address = document.querySelector('select[name="selectedAddressId"]').value;
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+        if (!address) {
+          event.preventDefault();
+          Swal.fire('Please select a delivery address.');
+        }
+        if (!paymentMethod) {
+          event.preventDefault();
+          Swal.fire('Please select a payment method.');
+        }
+      });
+
+    </script> -->
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
