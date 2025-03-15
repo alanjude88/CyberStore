@@ -323,7 +323,7 @@ button:hover {
                                     <%= product.discountPercentage %>%
                                 </p>
                             </div>
-                            <button class="icon-btn" onclick="addToCart('<%= product._id %>')">
+                            <button class="icon-btn" onclick="addToCart('<%= product._id %>', <%= product.quantity %>)">
                                 <i class="fas fa-shopping-cart discount-circle"></i>
                             </button>
                             <button
@@ -350,27 +350,32 @@ button:hover {
     </div>
 
     <script>
-        function addToCart(productId) {
-            fetch('/cart/addItem', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ productId, quantity: 1 })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('Added!', 'The item has been added to your cart.', 'success');
-                    } else {
-                        Swal.fire('Error!', 'Failed to add the item to your cart.', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire('Error!', 'An error occurred while adding the item to your cart.', 'error');
-                });
+       function addToCart(productId, availableStock) {
+    if (availableStock < 1) {
+        Swal.fire('Out of Stock', 'This item is currently unavailable.', 'warning');
+        return;
+    }
+
+    fetch('/cart/addItem', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId, quantity: 1 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Added!', 'The item has been added to your cart.', 'success');
+        } else {
+            Swal.fire('Error!', data.message || 'Failed to add the item to your cart.', 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error!', 'An error occurred while adding the item to your cart.', 'error');
+    });
+}
 
         function addToFavorites(productId) {
             const wishListBtn = document.querySelector(`.add-to-favorites[onclick="addToFavorites('${productId}')"]`);

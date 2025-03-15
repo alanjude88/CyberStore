@@ -80,456 +80,335 @@ const pageError = async (req, res) => {
     }
   };
   // Function to load the admin dashboard
-// Function to load the admin dashboard
-const loadDashboard = async (req, res) => {
-  try {
-    const { filterValue, startDate, endDate } = req.query;
-    const today = new Date();
-    let dayStart, dayEnd;
-
-    switch (filterValue) {
-      case 'daily':
-        dayStart = new Date(today.setHours(0, 0, 0, 0));
-        dayEnd = new Date(today.setHours(23, 59, 59, 999));
-        break;
-      case 'weekly':
-        const firstDayOfWeek = today.getDate() - today.getDay();
-        dayStart = new Date(today.getFullYear(), today.getMonth(), firstDayOfWeek);
-        dayStart.setHours(0, 0, 0, 0);
-        dayEnd = new Date(today.getFullYear(), today.getMonth(), firstDayOfWeek + 6);
-        dayEnd.setHours(23, 59, 59, 999);
-        break;
-      case 'monthly':
-        dayStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        dayEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        dayEnd.setHours(23, 59, 59, 999);
-        break;
-      case 'yearly':
-        dayStart = new Date(today.getFullYear(), 0, 1);
-        dayEnd = new Date(today.getFullYear(), 11, 31);
-        dayEnd.setHours(23, 59, 59, 999);
-        break;
-      case 'custom':
-        if (startDate && endDate) {
-          dayStart = new Date(startDate);
-          dayEnd = new Date(endDate);
-          dayEnd.setHours(23, 59, 59, 999);
-        }
-        break;
-      default:
-        dayStart = new Date(0);
-        dayEnd = new Date();
-    }
-
-    const topProducts = await Product.aggregate([
-      {
-        $lookup: {
-          from: "orders",
-          localField: "_id",
-          foreignField: "orderedItems.product",
-          as: "orders",
-        },
-      },
-      {
-        $unwind: "$orders",
-      },
-      {
-        $unwind: "$orders.orderedItems",
-      },
-      {
-        $match: {
-          $expr: {
-            $eq: ["$_id", "$orders.orderedItems.product"],
-          },
-          "orders.status": {
-            $nin: ["Cancelled", "Returned", "Return Request", "Failed"],
-          },
-          "orders.createdAt": { $gte: dayStart, $lte: dayEnd },
-        },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          productName: { $first: "$productName" },
-          productImage: { $first: "$productImage" },
-          totalQuantity: {
-            $sum: { $toInt: "$orders.orderedItems.quantity" },
-          },
-          totalRevenue: {
-            $sum: {
-              $multiply: [
-                { $toDouble: "$orders.orderedItems.quantity" },
-                { $toDouble: "$orders.orderedItems.price" },
-              ],
-            },
-          },
-        },
-      },
-      {
-        $sort: {
-          totalQuantity: -1,
-        },
-      },
-      {
-        $limit: 10,
-      },
-      {
-        $project: {
-          _id: 1,
-          productName: 1,
-          productImage: 1,
-          totalQuantity: 1,
-          totalRevenue: 1,
-        },
-      },
-    ]);
-
-    // console.log('topProducts',topProducts);
-
-    const topBrands = await Order.aggregate([
-      {
-        $unwind: "$orderedItems",
-      },
-      {
-        $lookup: {
-          from: "products",
-          localField: "orderedItems.product",
-          foreignField: "_id",
-          as: "productDetails",
-        },
-      },
-      {
-        $unwind: "$productDetails",
-      },
-      {
-        $lookup: {
-          from: "brands",
-          localField: "productDetails.brand",
-          foreignField: "_id",
-          as: "brandDetails",
-        },
-      },
-      {
-        $unwind: "$brandDetails",
-      },
-      {
-        $match: {
-          "productDetails.isBlocked": false,
-          "brandDetails.isBlocked": false,
-          "brandDetails.isDeleted": false,
-          "orders.status": {
-            $nin: ["Cancelled", "Returned", "Return Request", "Failed"],
-          },
-          createdAt: { $gte: dayStart, $lte: dayEnd },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            brandId: "$brandDetails._id",
-            orderId: "$_id", // Group by brand and unique order ID
-          },
-          brandName: { $first: "$brandDetails.brandName" },
-          totalSales: {
-            $sum: {
-              $multiply: ["$orderedItems.quantity", "$orderedItems.price"],
-            },
-          },
-          totalQuantity: { $sum: "$orderedItems.quantity" },
-        },
-      },
-      {
-        $group: {
-          _id: "$_id.brandId",
-          brandName: { $first: "$brandName" },
-          totalSales: { $sum: "$totalSales" },
-          totalQuantity: { $sum: "$totalQuantity" },
-          totalOrders: { $sum: 1 }, // Count unique orders per brand
-        },
-      },
-      {
-        $addFields: {
-          averageOrderValue: { $divide: ["$totalSales", "$totalOrders"] },
-        },
-      },
-      {
-        $sort: { totalSales: -1 },
-      },
-      {
-        $limit: 10,
-      },
-    ]);
-
-    const topCategories = await Order.aggregate([
-      // Match only valid orders
-      {
-        $match: {
-          status: {
-            $nin: ["Cancelled", "Returned", "Return Request", "Failed"],
-          },
-          createdAt: { $gte: dayStart, $lte: dayEnd },
-        },
-      },
-      // Unwind ordered items
-      {
-        $unwind: "$orderedItems",
-      },
-      // Lookup product details
-      {
-        $lookup: {
-          from: "products",
-          localField: "orderedItems.product",
-          foreignField: "_id",
-          as: "product",
-        },
-      },
-      {
-        $unwind: "$product",
-      },
-      // Lookup category details
-      {
-        $lookup: {
-          from: "categories",
-          localField: "product.category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      {
-        $unwind: "$category",
-      },
-      // Match only listed categories and non-blocked products
-      {
-        $match: {
-          "category.isListed": true,
-          "product.isBlocked": false,
-        },
-      },
-      // Group by category
-      {
-        $group: {
-          _id: "$category._id",
-          categoryName: { $first: "$category.name" },
-          totalOrders: { $sum: 1 },
-          totalQuantitySold: {
-            $sum: { $toInt: "$orderedItems.quantity" },
-          },
-          totalRevenue: {
-            $sum: {
-              $multiply: [
-                { $toDouble: "$orderedItems.price" },
-                { $toDouble: "$orderedItems.quantity" },
-              ],
-            },
-          },
-        },
-      },
-      // Calculate averages and format
-      {
-        $project: {
-          _id: 1,
-          categoryName: 1,
-          totalOrders: 1,
-          totalQuantitySold: 1,
-          totalRevenue: { $round: ["$totalRevenue", 2] },
-          averageOrderValue: {
-            $round: [{ $divide: ["$totalRevenue", "$totalOrders"] }, 2],
-          },
-        },
-      },
-      // Sort by total revenue
-      {
-        $sort: { totalRevenue: -1 },
-      },
-
-      {
-        $limit: 10,
-      },
-    ]);
-
-    const totalOrders = await Order.countDocuments({
-      createdAt: { $gte: dayStart, $lte: dayEnd },
-    });
-    const activeOrders = await Order.countDocuments({
-      status: { $in: ["Pending", "Processing"] },
-      createdAt: { $gte: dayStart, $lte: dayEnd },
-    });
-    const cancelledOrders = await Order.countDocuments({
-      status: "Cancelled",
-      createdAt: { $gte: dayStart, $lte: dayEnd },
-    });
-    const completedOrders = await Order.countDocuments({
-      status: "Delivered",
-      createdAt: { $gte: dayStart, $lte: dayEnd },
-    });
-    const returnedOrders = await Order.countDocuments({
-      status: "Returned",
-      createdAt: { $gte: dayStart, $lte: dayEnd },
-    });
-
-    const totalRevenueResult = await Order.aggregate([
-      { $match: { createdAt: { $gte: dayStart, $lte: dayEnd } } },
-      { $group: { _id: null, totalRevenue: { $sum: "$finalAmount" } } },
-    ]);
-
-    const totalDiscountResult = await Order.aggregate([
-      { $unwind: "$orderedItems" },
-      {
-        $lookup: {
-          from: "products",
-          localField: "orderedItems.product",
-          foreignField: "_id",
-          as: "productDetails",
-        },
-      },
-      { $unwind: "$productDetails" },
-      {
-        $addFields: {
-          effectiveDiscount: {
-            $cond: [
-              { $ifNull: ["$productDetails.salePrice", false] },
-              {
-                $subtract: [
-                  "$productDetails.realPrice",
-                  "$productDetails.salePrice",
-                ],
-              },
-              {
-                $multiply: [
-                  "$productDetails.realPrice",
-                  { $divide: ["$productDetails.productOffer", 100] },
-                ],
-              },
-            ],
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalDiscount: {
-            $sum: {
-              $multiply: ["$orderedItems.quantity", "$effectiveDiscount"],
-            },
-          },
-        },
-      },
-    ]);
-
-    const couponsApplied = await Order.countDocuments({ couponApplied: true });
-    const couponDiscountResult = await Order.aggregate([
-      {
-        $addFields: {
-          couponReduct: {
-            $cond: {
-              if: {
-                $isNumber: "$couponDiscount",
-              },
-              then: "$couponDiscount",
-              else: 0,
-            },
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          couponDiscount: { $sum: "$couponReduct" },
-        },
-      },
-    ]);
-
-    const couponDiscount = couponDiscountResult[0]?.couponDiscount || 0;
-    const numberOfCustomers = await User.countDocuments();
-
-    totalRevenue = totalRevenueResult[0]?.totalRevenue || 0;
-    totalRevenue = parseInt(totalRevenue);
-
-    totalDiscount = totalDiscountResult[0]?.totalDiscount || 0;
-    totalDiscount = parseInt(totalDiscount);
-
-    res.render("admin/adminDashboard", {
-      currentPage: "dashboard",
-      totalOrders,
-      activeOrders,
-      cancelledOrders,
-      completedOrders,
-      returnedOrders,
-      totalRevenue,
-      totalDiscount,
-      couponsApplied,
-      numberOfCustomers,
-      couponDiscount,
-      topProducts,
-      topBrands,
-      topCategories,
-      selectedFilter: filterValue || 'all',
-    });
-  } catch (error) {
-    console.log("Error while loading dashboard", error);
-
-    res.redirect("/pageError");
-  }
-};
-
-const filteredAdminDashboard = async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-
-    // Validate date inputs
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: "Start date and end date are required." });
-    }
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Ensure full day inclusion
-
-    // Fetch order statistics
-    const orderStats = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: start, $lte: end }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          completed: { $sum: { $cond: [{ $eq: ["$status", "Completed"] }, 1, 0] } },
-          active: { $sum: { $cond: [{ $eq: ["$status", "Active"] }, 1, 0] } },
-          cancelled: { $sum: { $cond: [{ $eq: ["$status", "Cancelled"] }, 1, 0] } },
-          returned: { $sum: { $cond: [{ $eq: ["$status", "Returned"] }, 1, 0] } }
-        }
-      }
-    ]);
-
-    // Fetch top brands with sales
-    const topBrands = await Order.aggregate([
-      { $match: { createdAt: { $gte: start, $lte: end } } },
-      { $group: { _id: "$brandName", totalSales: { $sum: "$amount" } } },
-      { $sort: { totalSales: -1 } },
-      { $limit: 10 } // Optional: Restrict to top 10 brands
-    ]);
-
-    res.json({ orderStats: orderStats[0] || {}, topBrands });
-
-  } catch (error) {
-    console.error("Error in filteredAdminDashboard:", error);
-    res.status(500).json({ error: "Failed to fetch filtered dashboard data", details: error.message });
-  }
-};
-
-
-  
-  // Function to load the sales page
-  const loadSalesPage=async(req,res)=>{
+  const loadDashboard = async (req, res) => {
     try {
+      const { filterValue, startDate, endDate } = req.query;
+      const today = new Date();
+      let dayStart, dayEnd;
+  
+      switch (filterValue) {
+        case 'daily':
+          dayStart = new Date(today.setHours(0, 0, 0, 0));
+          dayEnd = new Date(today.setHours(23, 59, 59, 999));
+          break;
+        case 'weekly':
+          const firstDayOfWeek = today.getDate() - today.getDay();
+          dayStart = new Date(today.getFullYear(), today.getMonth(), firstDayOfWeek);
+          dayStart.setHours(0, 0, 0, 0);
+          dayEnd = new Date(today.getFullYear(), today.getMonth(), firstDayOfWeek + 6);
+          dayEnd.setHours(23, 59, 59, 999);
+          break;
+        case 'monthly':
+          dayStart = new Date(today.getFullYear(), today.getMonth(), 1);
+          dayEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          dayEnd.setHours(23, 59, 59, 999);
+          break;
+        case 'yearly':
+          dayStart = new Date(today.getFullYear(), 0, 1);
+          dayEnd = new Date(today.getFullYear(), 11, 31);
+          dayEnd.setHours(23, 59, 59, 999);
+          break;
+        case 'custom':
+          if (startDate && endDate) {
+            dayStart = new Date(startDate);
+            dayEnd = new Date(endDate);
+            dayEnd.setHours(23, 59, 59, 999);
+          }
+          break;
+        default:
+          dayStart = new Date(0);
+          dayEnd = new Date();
+      }
+      const deliveredOrdersRevenue = await Order.aggregate([
+        {
+          $match: {
+            "orderedItems.status": "Delivered", // At least one delivered item
+            createdAt: { $gte: dayStart, $lte: dayEnd } // Apply the date filter
+          }
+        },
+        {
+          $group: {
+            _id: "$_id", // Group by order ID
+            finalAmount: { $first: "$finalAmount" } // Take the finalAmount for each order
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: "$finalAmount" } // Sum up the final amounts
+          }
+        }
+      ]);
+      
+      const totalRevenueForSales = deliveredOrdersRevenue.length > 0 ? deliveredOrdersRevenue[0].totalRevenue : 0;
+  
+      const topProducts = await Order.aggregate([
+        { $unwind: "$orderedItems" },
+        {
+            $match: {
+                "orderedItems.status": { $nin: ["Cancelled", "Returned", "Return Requested", "Failed"] },
+                createdAt: { $gte: dayStart, $lte: dayEnd },
+            },
+        },
+        {
+            $lookup: {
+                from: "products",
+                localField: "orderedItems.product",
+                foreignField: "_id",
+                as: "productDetails",
+            },
+        },
+        { $unwind: "$productDetails" },
+        {
+            $group: {
+                _id: "$orderedItems.product",
+                productName: { $first: "$productDetails.productName" }, // Fix field name
+                productImage: { $first: { $ifNull: ["$productDetails.productImage", ["default.jpg"]] } },
+                totalQuantity: { $sum: "$orderedItems.quantity" },
+                totalRevenue: {
+                    $sum: { $multiply: ["$orderedItems.quantity", "$orderedItems.priceAtPurchase"] },
+                },
+            },
+        },
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 10 },
+    ]);
+      const topBrands = await Order.aggregate([
+        { $unwind: "$orderedItems" },
+        {
+          $match: {
+            "orderedItems.status": { $nin: ["Cancelled", "Returned", "Return Request", "Failed"] },
+            createdAt: { $gte: dayStart, $lte: dayEnd },
+          },
+        },
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderedItems.product",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+        { $unwind: "$productDetails" },
+        {
+          $lookup: {
+            from: "brands",
+            localField: "productDetails.brand",
+            foreignField: "_id",
+            as: "brandDetails",
+          },
+        },
+        { $unwind: "$brandDetails" },
+        {
+          $match: {
+            "productDetails.isBlocked": false,
+            "brandDetails.isBlocked": false,
+            "brandDetails.isDeleted": false,
+          },
+        },
+        {
+          $group: {
+            _id: "$brandDetails._id",
+            brandName: { $first: "$brandDetails.brandName" },
+            totalSales: { $sum: { $multiply: ["$orderedItems.quantity", "$orderedItems.priceAtPurchase"] } },
+            totalQuantity: { $sum: "$orderedItems.quantity" },
+            totalOrders: { $addToSet: "$_id" }, // Collect unique order IDs
+          },
+        },
+        {
+          $addFields: {
+            totalOrdersCount: { $size: { $ifNull: ["$totalOrders", []] } },
+            averageOrderValue: {
+              $cond: {
+                if: { $gt: [{ $size: { $ifNull: ["$totalOrders", []] } }, 0] },
+                then: { $divide: ["$totalSales", { $size: { $ifNull: ["$totalOrders", []] } }] },
+                else: 0
+              }
+            }
+          },
+        },
+        { $sort: { totalSales: -1 } },
+        { $limit: 10 },
+      ]);
+      const topCategories = await Order.aggregate([
+        { $unwind: "$orderedItems" },
+        {
+            $match: {
+                "orderedItems.status": { 
+                    $nin: ["Cancelled", "Returned", "Return Requested", "Failed"] 
+                },
+                createdAt: { $gte: dayStart, $lte: dayEnd },
+            },
+        },
+        {
+            $lookup: {
+                from: "products",
+                localField: "orderedItems.product",
+                foreignField: "_id",
+                as: "product",
+            },
+        },
+        { $unwind: "$product" },
+        {
+            $lookup: {
+                from: "categories",
+                localField: "product.category",
+                foreignField: "_id",
+                as: "category",
+            },
+        },
+        { $unwind: "$category" },
+        {
+            $match: {
+                "category.isListed": true,
+                "product.isBlocked": false,
+            },
+        },
+        {
+            $group: {
+                _id: "$category._id",
+                categoryName: { $first: "$category.name" },
+                totalOrders: { $sum: 1 },
+                totalQuantitySold: { $sum: "$orderedItems.quantity" }, // No need for $toDouble if stored as Number
+                totalRevenue: {
+                    $sum: {
+                        $multiply: ["$orderedItems.quantity", "$orderedItems.priceAtPurchase"]
+                    },
+                },
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                categoryName: 1,
+                totalOrders: 1,
+                totalQuantitySold: 1,
+                totalRevenue: { $round: ["$totalRevenue", 2] },
+                averageOrderValue: {
+                    $round: [
+                        { 
+                            $cond: { 
+                                if: { $eq: ["$totalOrders", 0] }, 
+                                then: 0, 
+                                else: { $divide: ["$totalRevenue", "$totalOrders"] } 
+                            } 
+                        }, 
+                        2
+                    ],
+                },
+            },
+        },
+        { $sort: { totalRevenue: -1 } },
+        { $limit: 10 },
+    ]);
+  
+      const totalOrders = await Order.countDocuments({
+        createdAt: { $gte: dayStart, $lte: dayEnd },
+      });
+  
+      const activeOrders = await Order.countDocuments({
+        "orderedItems.status": { $in: ["Pending", "Processing"] }, // Check at item level
+        createdAt: { $gte: dayStart, $lte: dayEnd }, // Date filter
+      });
+  
+      const cancelledItemsResult = await Order.aggregate([
+        { $unwind: "$orderedItems" }, // Break orders into individual items
+        {
+          $match: {
+            "orderedItems.status": "Cancelled", // Filter only cancelled items
+            createdAt: { $gte: dayStart, $lte: dayEnd }, // Filter by date range
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalCancelledItems: { $sum: "$orderedItems.quantity" }, // Sum cancelled item quantities
+          },
+        },
+      ]);
+      
+      // Extract the total cancelled items count
+      const cancelledItems = cancelledItemsResult.length > 0 ? cancelledItemsResult[0].totalCancelledItems : 0;
+      
+  
+      const completedOrders = await Order.aggregate([
+        {
+            $match: { 
+                createdAt: { $gte: dayStart, $lte: dayEnd } 
+            }
+        },
+        {
+            $project: {
+                allCompleted: {
+                    $allElementsTrue: { 
+                        $map: { 
+                            input: "$orderedItems", 
+                            as: "item", 
+                            in: { 
+                                $in: ["$$item.status", ["Delivered"]]  // Allow both "Delivered" and "Returned"
+                            } 
+                        }
+                    }
+                }
+            }
+        },
+        {
+            $match: { allCompleted: true }  // Only orders where all items are Delivered or Returned
+        },
+        {
+            $count: "completedOrders"
+        }
+    ]);
+    const completedOrdersCount = completedOrders.length > 0 ? completedOrders[0].completedOrders : 0;
+    
+    
+  
+      const returnedItemsResult = await Order.aggregate([
+        { $unwind: "$orderedItems" }, // Break orders into individual items
+        {
+          $match: {
+            "orderedItems.status": "Returned", // Filter only returned items
+            createdAt: { $gte: dayStart, $lte: dayEnd }, // Filter by date range
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalReturnedItems: { $sum: "$orderedItems.quantity" }, // Sum returned item quantities
+          },
+        },
+      ]);
+      
+      // Extract the total returned items count
+      const returnedItems = returnedItemsResult.length > 0 ? returnedItemsResult[0].totalReturnedItems : 0;
+      
+  
       const totalRevenueResult = await Order.aggregate([
-        { $group: { _id: null, totalRevenue: { $sum: "$finalAmount" } } },
-      ])
-  
-  
+        {
+            $match: {
+                createdAt: { $gte: dayStart, $lte: dayEnd },
+                "orderedItems.status": "Delivered" // Ensure at least one delivered item exists
+            }
+        },
+        {
+            $group: {
+                _id: "$_id", // Group by Order ID
+                finalAmount: { $first: "$finalAmount" } // Keep finalAmount per order
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: "$finalAmount" } // Sum up all finalAmounts
+            }
+        }
+    ]);
       const totalDiscountResult = await Order.aggregate([
+        {
+          $match: {
+            status: { $nin: ["Cancelled", "Returned", "Return Request", "Failed"] },
+          },
+        },
         { $unwind: "$orderedItems" },
         {
           $lookup: {
@@ -542,22 +421,19 @@ const filteredAdminDashboard = async (req, res) => {
         { $unwind: "$productDetails" },
         {
           $addFields: {
+            salePrice: { $toDouble: { $ifNull: ["$productDetails.salePrice", 0] } },
+            realPrice: { $toDouble: "$productDetails.realPrice" },
+            productOffer: { $toDouble: { $ifNull: ["$productDetails.productOffer", 0] } },
+          },
+        },
+        {
+          $addFields: {
             effectiveDiscount: {
-              $cond: [
-                { $ifNull: ["$productDetails.salePrice", false] },
-                {
-                  $subtract: [
-                    "$productDetails.realPrice",
-                    "$productDetails.salePrice",
-                  ],
-                },
-                {
-                  $multiply: [
-                    "$productDetails.realPrice",
-                    { $divide: ["$productDetails.productOffer", 100] },
-                  ],
-                },
-              ],
+              $cond: {
+                if: { $gt: ["$salePrice", 0] },
+                then: { $subtract: ["$realPrice", "$salePrice"] },
+                else: { $multiply: ["$realPrice", { $divide: ["$productOffer", 100] }] },
+              },
             },
           },
         },
@@ -566,57 +442,315 @@ const filteredAdminDashboard = async (req, res) => {
             _id: null,
             totalDiscount: {
               $sum: {
-                $multiply: ["$orderedItems.quantity", "$effectiveDiscount"],
+                $multiply: [{ $toDouble: "$orderedItems.quantity" }, "$effectiveDiscount"],
               },
             },
           },
         },
       ]);
   
-  
-      // console.log("Total Discount Result in Sales Page:", totalDiscountResult);
-  
-      totalRevenue=(totalRevenueResult[0]?.totalRevenue || 0).toFixed(2);
-      totalDiscount=(totalDiscountResult[0]?.totalDiscount || 0).toFixed(2);
-      const totalOrders = await Order.countDocuments();
-      const activeOrders = await Order.countDocuments({
-        status: { $in: ["Pending", "Processing"] },
-      });
-      const cancelledOrders = await Order.countDocuments({ status: "Cancelled" });
-      const completedOrders = await Order.countDocuments({ status: "Delivered" });
-      const returnedOrders = await Order.countDocuments({ status: "Returned" });
-      
-  
       const couponDiscountResult = await Order.aggregate([
-        { $group: { _id: null, couponDiscount: { $sum: "$couponDiscount" } } },
+        {
+          $group: {
+            _id: null,
+            couponDiscount: { $sum: { $ifNull: ["$couponDiscount", 0] } },
+          },
+        },
       ]);
+  
+      const totalRevenue = parseFloat((totalRevenueResult[0]?.totalRevenue || 0).toFixed(2));
       const couponDiscount = couponDiscountResult[0]?.couponDiscount || 0;
-      const couponsApplied = await Order.countDocuments({ couponApplied: true });
       const numberOfCustomers = await User.countDocuments();
-      
-      res.render('admin/salesPage',{
-        currentPage:'sales',
+      const totalDiscount = parseFloat((totalDiscountResult[0]?.totalDiscount || 0).toFixed(2));
+  
+      res.render("admin/adminDashboard", {
+        currentPage: "dashboard",
+        totalOrders,
+        activeOrders,
+        cancelledItems,
+        completedOrdersCount,
+        returnedItems,
         totalRevenue,
         totalDiscount,
-        totalOrders,
-        orders:[],
-        activeOrders,
-        cancelledOrders,
-        completedOrders,
-        returnedOrders,
+        couponsApplied: await Order.countDocuments({ couponDiscount: { $gt: 0 } }),
+        numberOfCustomers,
         couponDiscount,
-        couponsApplied,
-        numberOfCustomers
+        totalRevenueForSales,
+        topProducts,
+        topBrands,
+        topCategories,
+        filterValue, // Inject into EJS
+        startDate,   // Inject into EJS
+        endDate,     // Inject into EJS
+        selectedFilter: filterValue || "all",
       });
   
-  
     } catch (error) {
-      console.log(
-        "Error in loading sales page in adminController",error);
-          res.redirect("/pageError");
-      
+      console.error("Error while loading dashboard:", error);
+      res.redirect("/pageError");
     }
-  }
+  };
+  
+
+  const filteredAdminDashboard = async (req, res) => {
+    try {
+        const { startDate, endDate, filterValue } = req.query;
+        
+        let dayStart, dayEnd;
+        const today = new Date();
+        
+        switch (filterValue) {
+            case "daily":
+                dayStart = new Date();
+                dayStart.setHours(0, 0, 0, 0);
+                dayEnd = new Date();
+                dayEnd.setHours(23, 59, 59, 999);
+                break;
+            case "weekly":
+                const currentDay = today.getDay();
+                dayStart = new Date(today);
+                dayStart.setDate(today.getDate() - currentDay);
+                dayStart.setHours(0, 0, 0, 0);
+                
+                dayEnd = new Date(dayStart);
+                dayEnd.setDate(dayStart.getDate() + 6);
+                dayEnd.setHours(23, 59, 59, 999);
+                break;
+            case "monthly":
+                dayStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                dayEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                dayEnd.setHours(23, 59, 59, 999);
+                break;
+            case "yearly":
+                dayStart = new Date(today.getFullYear(), 0, 1);
+                dayEnd = new Date(today.getFullYear(), 11, 31);
+                dayEnd.setHours(23, 59, 59, 999);
+                break;
+            case "custom":
+                if (startDate && endDate) {
+                    dayStart = new Date(startDate);
+                    dayEnd = new Date(endDate);
+                    dayEnd.setHours(23, 59, 59, 999);
+                    if (dayStart > dayEnd) {
+                        return res.status(400).json({ error: "Start date cannot be after end date." });
+                    }
+                }
+                break;
+            default:
+                dayStart = new Date(0);
+                dayEnd = new Date();
+        }
+        
+        // Fetch order statistics
+        const orderStats = await Order.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: dayStart, $lte: dayEnd },
+                    overallStatus: { $nin: ["Cancelled", "Returned", "Return Requested", "Failed"] },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    completed: { $sum: { $cond: [{ $eq: ["$overallStatus", "Delivered"] }, 1, 0] } },
+                    active: { $sum: { $cond: [{ $in: ["$overallStatus", ["Pending", "Processing"]] }, 1, 0] } },
+                    cancelled: { $sum: { $cond: [{ $eq: ["$overallStatus", "Cancelled"] }, 1, 0] } },
+                    returned: { $sum: { $cond: [{ $eq: ["$overallStatus", "Returned"] }, 1, 0] } },
+                    
+                },
+            },
+        ]);
+        const totalRevenueForSales = await Order.aggregate([
+          {
+            $match: {
+                createdAt: { $gte: dayStart, $lte: dayEnd },
+                "orderedItems.status": "Delivered", // Only include orders with at least one delivered item
+            },
+        },
+        {
+            $group: {
+                _id: { $dateToString: { format: groupByFormat, date: "$createdAt" } },
+                totalRevenue: { $sum: "$finalAmount" },
+            },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+        
+        // Fetch top brands
+        const topBrands = await Order.aggregate([
+            { $match: { createdAt: { $gte: dayStart, $lte: dayEnd } } },
+            { $unwind: "$orderedItems" },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "orderedItems.product",
+                    foreignField: "_id",
+                    as: "productDetails",
+                },
+            },
+            { $unwind: "$productDetails" },
+            {
+                $match: { "productDetails.isBlocked": false },
+            },
+            {
+                $lookup: {
+                    from: "brands",
+                    localField: "productDetails.brand",
+                    foreignField: "_id",
+                    as: "brandDetails",
+                },
+            },
+            { $unwind: "$brandDetails" },
+            {
+                $match: { "brandDetails.isBlocked": false, "brandDetails.isDeleted": false },
+            },
+            {
+                $group: {
+                    _id: "$brandDetails._id",
+                    brandName: { $first: "$brandDetails.brandName" },
+                    totalSales: { $sum: { $multiply: ["$orderedItems.quantity", "$orderedItems.price"] } },
+                    totalOrders: { $sum: 1 },
+                },
+            },
+            { $sort: { totalSales: -1 } },
+            { $limit: 10 },
+        ]);
+        
+        // Fetch top categories
+        const topCategories = await Order.aggregate([
+            { $match: { createdAt: { $gte: dayStart, $lte: dayEnd } } },
+            { $unwind: "$orderedItems" },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "orderedItems.product",
+                    foreignField: "_id",
+                    as: "product",
+                },
+            },
+            { $unwind: "$product" },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "product.category",
+                    foreignField: "_id",
+                    as: "category",
+                },
+            },
+            { $unwind: "$category" },
+            {
+                $match: { "category.isListed": true, "product.isBlocked": false },
+            },
+            {
+                $group: {
+                    _id: "$category._id",
+                    categoryName: { $first: "$category.name" },
+                    totalRevenue: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } },
+                    totalOrders: { $sum: 1 },
+                },
+            },
+            { $sort: { totalRevenue: -1 } },
+            { $limit: 10 },
+        ]);
+        
+        res.json({
+            orderStats: orderStats[0] || {},
+            totalRevenueForSales,
+            topBrands,
+            topCategories,
+            filterValue, // Inject into EJS
+            startDate,   // Inject into EJS
+            endDate,     // Inject into EJS
+        });
+    } catch (error) {
+        console.error("Error in filteredAdminDashboard:", error);
+        res.status(500).json({ error: "Failed to fetch filtered dashboard data", details: error.message });
+    }
+};
+  
+
+
+  
+  // Function to load the sales page
+  const loadSalesPage = async (req, res) => {
+    try {
+        // Get all orders where at least one item is delivered
+        const deliveredOrders = await Order.find({
+            "orderedItems.status": "Delivered"
+        }).populate("user", "name"); // Populate user name
+
+        // Calculate total revenue from delivered orders
+        const totalRevenueResult = await Order.aggregate([
+            { $unwind: "$orderedItems" },
+            { $match: { "orderedItems.status": "Delivered" } }, // Filter delivered items
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: "$finalAmount" }, // Sum final amount of delivered orders
+                },
+            },
+        ]);
+
+        // Calculate total discount from delivered items
+        const totalDiscountResult = await Order.aggregate([
+            { $unwind: "$orderedItems" },
+            { $match: { "orderedItems.status": "Delivered" } }, // Only delivered items
+            {
+                $group: {
+                    _id: null,
+                    totalDiscount: { $sum: "$totalDiscount" },
+                },
+            },
+        ]);
+
+        // Calculate coupon discounts applied
+        const couponDiscountResult = await Order.aggregate([
+            { $match: { "orderedItems.status": "Delivered" } }, // Only delivered orders
+            {
+                $group: {
+                    _id: null,
+                    couponDiscount: { $sum: "$couponDiscount" },
+                },
+            },
+        ]);
+
+        // Count different order statuses
+        const totalOrders = deliveredOrders.length;
+        const activeOrders = await Order.countDocuments({ status: { $in: ["Pending", "Processing"] } });
+        const cancelledOrders = await Order.countDocuments({ status: "Cancelled" });
+        const completedOrders = await Order.countDocuments({ status: "Delivered" });
+        const returnedOrders = await Order.countDocuments({ status: "Returned" });
+
+        // Get number of customers who placed orders
+        const numberOfCustomers = await User.countDocuments();
+
+        // Convert numbers to fixed 2 decimal places
+        const totalRevenue = (totalRevenueResult[0]?.totalRevenue || 0).toFixed(2);
+        const totalDiscount = (totalDiscountResult[0]?.totalDiscount || 0).toFixed(2);
+        const couponDiscount = (couponDiscountResult[0]?.couponDiscount || 0).toFixed(2);
+
+        // Render sales page with filtered data
+        res.render("admin/salesPage", {
+            currentPage: "sales",
+            totalRevenue,
+            totalDiscount,
+            totalOrders,
+            orders: deliveredOrders, // Only show orders with delivered items
+            activeOrders,
+            cancelledOrders,
+            completedOrders,
+            returnedOrders,
+            couponDiscount,
+            numberOfCustomers,
+        });
+
+    } catch (error) {
+        console.error("Error in loading sales page in adminController", error);
+        res.redirect("/pageError");
+    }
+};
+
   
   // Function to filter sales report based on date range
   const filterSalesReport = async (req, res) => {
@@ -639,12 +773,10 @@ const filteredAdminDashboard = async (req, res) => {
                     break;
                 case "weekly":
                     startDay = new Date();
-                    const dayOfWeek = currentDay.getDay(); // 0 (Sunday) to 6 (Saturday)
-                    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust to start from Monday
-                
+                    const dayOfWeek = currentDay.getDay();
+                    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                     startDay.setDate(currentDay.getDate() - diff);
                     startDay.setHours(0, 0, 0, 0);
-                
                     endDay = new Date(startDay);
                     endDay.setDate(startDay.getDate() + 6);
                     endDay.setHours(23, 59, 59, 999);
@@ -660,15 +792,16 @@ const filteredAdminDashboard = async (req, res) => {
             }
         }
 
-        // Fetch only "Delivered" orders
+        // Fetch only orders that have at least one delivered item
         const orders = await Order.aggregate([
             {
                 $match: {
                     createdAt: { $gte: startDay, $lte: endDay },
-                    status: "Delivered", // ✅ Ensures only delivered orders are included
+                    "orderedItems.status": "Delivered", // Ensures at least one delivered item
                 },
             },
-            { $unwind: "$orderedItems" },
+            { $unwind: "$orderedItems" }, // Separate ordered items
+            { $match: { "orderedItems.status": "Delivered" } }, // Only keep delivered items
             {
                 $lookup: {
                     from: "products",
@@ -692,28 +825,22 @@ const filteredAdminDashboard = async (req, res) => {
             {
                 $group: {
                     _id: "$_id",
-                    createdAt: { $first: "$createdAt" },
-                    finalAmount: { $first: "$finalAmount" },
-                    couponDiscount: { $first: "$couponDiscount" }, 
-                    totalDiscount: { $sum: { $multiply: ["$orderedItems.quantity", "$effectiveDiscount"] } }, 
+                    createdAt: { $first:"$createdAt" },
+                    finalAmount: { $first:"$finalAmount" }, 
+                    couponDiscount: { $first:"$couponDiscount" },
+                    totalDiscount: { $sum:{ $multiply: ["$orderedItems.quantity", "$effectiveDiscount"] } },
                 },
             },
             { $sort: { createdAt: -1 } },
         ]);
 
-        const orderTotal = Math.floor(
-            orders.reduce((sum, order) => sum + (order.finalAmount || 0), 0)
-        );
+        // Calculate sales report totals
+        const orderTotal = orders.reduce((sum, order) => sum + (order.finalAmount  || 0), 0);
+        const couponDiscount = orders.reduce((sum, order) => sum + (order.couponDiscount || 0), 0);
+        const totalDiscount = orders.reduce((sum, order) => sum + (order.totalDiscount || 0), 0);
 
-        const couponDiscount = Math.floor(
-            orders.reduce((sum, order) => sum + (order.couponDiscount || 0), 0)
-        );
-
-        const totalDiscount = Math.floor(
-            orders.reduce((sum, order) => sum + (order.totalDiscount || 0), 0)
-        );
-
-        const couponsApplied = await Order.countDocuments({ couponApplied: true, status: "Delivered" });
+        // Count number of orders with coupons applied
+        const couponsApplied = await Order.countDocuments({ couponApplied: true, "orderedItems.status": "Delivered" });
 
         console.log({ orderTotal, couponDiscount, totalDiscount });
 
@@ -731,6 +858,8 @@ const filteredAdminDashboard = async (req, res) => {
         res.redirect("/pageError");
     }
 };
+
+
   
   
   // Function to fetch orders by date range
@@ -738,137 +867,258 @@ const filteredAdminDashboard = async (req, res) => {
     try {
         console.log("startDate:", startDate);
         console.log("endDate:", endDate);
-  
+
         if (!startDate || !endDate) {
             throw new Error("Start date or end date is missing.");
         }
-  
+
         const startDay = new Date(startDate);
         const endDay = new Date(endDate);
-  
-         // Ensure endDay covers the entire day
+        
+        // Ensure endDay covers the full day
         endDay.setHours(23, 59, 59, 999);
+
         if (isNaN(startDay.getTime()) || isNaN(endDay.getTime())) {
             throw new Error("Invalid date format. Please use 'YYYY-MM-DD'.");
         }
-  
+
+        // Fetch only orders that have at least one delivered item
         const orders = await Order.find({
             createdAt: { $gte: startDay, $lte: endDay },
-        }).populate('user', 'name email phone')
-            .sort({ createdAt: -1 });
-  
+            "orderedItems.status": "Delivered", // Ensures at least one delivered item
+        })
+        .populate('user', 'name email phone') // Fetch user details
+        .sort({ createdAt: -1 });
+
         return orders;
     } catch (error) {
         console.error("Error fetching orders by date range:", error.message);
         throw error;
     }
-  };
+};
+
   
   // Excel Report
   const excelReportDownload = async (req, res) => {
-      try {
-          const { startDate, endDate } = req.query;
-          const orders = await ordersByDateRange(startDate, endDate);
-  
-          const workbook = new exceljs.Workbook();
-          const worksheet = workbook.addWorksheet('Sales Report');
-  
-          worksheet.addRow([
-              'Order ID',
-              'Date',
-              'Customer Name',
-              'Email',
-              'Phone',
-              'Status',
-              'Subtotal',
-              'Discount',
-              'Coupon Discount',
-              'Final Amount',
-              'Payment Method'
-          ]);
-  
-          orders.forEach(order => {
-              worksheet.addRow([
-                  order._id.toString(),
-                  new Date(order.createdAt).toLocaleDateString(),
-                  order.user?.name || 'N/A',
-                  order.user?.email || 'N/A',
-                  order.user?.phone || 'N/A',
-                  order.status,
-                  order.totalAmount,
-                  order.totalDiscount,
-                  order.couponDiscount,
-                  order.finalAmount,
-                  order.paymentMethod
-              ]);
-          });
-  
-          worksheet.getRow(1).font = { bold: true };
-          worksheet.columns.forEach(column => {
-              column.width = 15;
-          });
-  
-          res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-          res.setHeader('Content-Disposition', 'attachment; filename=sales-report.xlsx');
-  
-          await workbook.xlsx.write(res);
-          res.end();
-      } catch (error) {
-          console.error("Error in downloading excel report:", error);
-          res.status(500).send("Error generating report");
-      }
-  };
+    try {
+        const { startDate, endDate } = req.query;
+
+        const orders = await Order.find({
+            createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
+            "orderedItems.status": "Delivered"
+        })
+        .populate({
+            path: "orderedItems.product",
+            select: "name" // ✅ Ensure we fetch the product name
+        })
+        .populate("user", "name email phone")
+        .sort({ createdAt: -1 });
+
+        if (!orders.length) {
+            return res.status(404).json({ message: "No orders found in this date range" });
+        }
+
+        const workbook = new exceljs.Workbook();
+        const worksheet = workbook.addWorksheet('Sales Report');
+
+        // 🔹 Sales Report Title
+        worksheet.mergeCells('A1:E1');
+        worksheet.getCell('A1').value = "Sales Report";
+        worksheet.getCell('A1').font = { bold: true, size: 16 };
+        worksheet.getCell('A1').alignment = { horizontal: 'center' };
+
+        // 🔹 Period Range
+        worksheet.mergeCells('A2:E2');
+        worksheet.getCell('A2').value = `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+        worksheet.getCell('A2').font = { italic: true };
+        worksheet.getCell('A2').alignment = { horizontal: 'center' };
+
+        let totalRevenue = 0;
+        let totalCouponDiscount = 0;
+        let totalDeliveredOrders = 0;
+
+        orders.forEach(order => {
+            const deliveredItems = order.orderedItems.filter(item => item.status === "Delivered");
+            if (deliveredItems.length === 0) return;
+
+            totalDeliveredOrders++;
+            totalRevenue += order.finalAmount;
+            totalCouponDiscount += order.couponDiscount ?? 0;
+        });
+
+        // 🔹 Add Summary Section (like PDF)
+        worksheet.addRow([]);
+        worksheet.addRow([`Total Delivered Orders:`, totalDeliveredOrders]);
+        worksheet.addRow([`Total Amount:`, `₹${totalRevenue.toFixed(2)}`]);
+        worksheet.addRow([`Total Coupon Discount:`, `₹${totalCouponDiscount.toFixed(2)}`]);
+        worksheet.addRow([]); // Blank row for spacing
+
+        worksheet.getRow(5).font = { bold: true };
+        worksheet.getRow(6).font = { bold: true };
+        worksheet.getRow(7).font = { bold: true };
+
+        // 🔹 Column Headers
+        worksheet.addRow([
+            'Order ID',
+            'Date',
+            'Customer Name',
+            'Email',
+            'Phone',
+            'Product Name',
+            'Quantity',
+            'Real Price',
+            'Coupon Discount',
+            'Final Amount',
+            'Payment Method'
+        ]).font = { bold: true };
+
+        orders.forEach(order => {
+            const deliveredItems = order.orderedItems.filter(item => item.status === "Delivered");
+
+            deliveredItems.forEach((item, index) => {
+                worksheet.addRow([
+                    index === 0 ? order._id.toString() : '',
+                    index === 0 ? new Date(order.createdAt).toLocaleDateString() : '',
+                    index === 0 ? order.user?.name || 'N/A' : '',
+                    index === 0 ? order.user?.email || 'N/A' : '',
+                    index === 0 ? order.user?.phone || 'N/A' : '',
+                    item.product?.name || item.productName || 'Unknown Product',
+                    item.quantity || 1,
+                    (item.priceAtPurchase ?? 0).toFixed(2),
+                    index === 0 ? (order.couponDiscount ?? 0).toFixed(2) : '',
+                    index === 0 ? order.finalAmount.toFixed(2) : '',
+                    index === 0 ? order.paymentMethod || 'N/A' : ''
+                ]);
+            });
+        });
+
+        worksheet.columns.forEach(column => {
+            column.width = 18;
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=sales-report.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error("❌ Error in downloading excel report:", error);
+        res.status(500).send("Error generating report");
+    }
+};
+
+
   
   // PDF Report
   const downloadPDFreport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-  
+
         if (!startDate || !endDate) {
             return res.status(400).send("Start and end dates are required.");
         }
-  
+
         const orders = await ordersByDateRange(startDate, endDate);
-  
-        const doc = new PDFDocument();
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename=sales-report.pdf');
+        const doc = new PDFDocument({ margin: 30 });
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "attachment; filename=sales-report.pdf");
         doc.pipe(res);
-  
-        doc.fontSize(20).text('Sales Report', { align: 'center' });
+
+        // Header Section
+        doc.fontSize(16).text("Sales Report", { align: "center", underline: true });
         doc.moveDown();
-        doc.fontSize(12).text(`Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`, { align: 'center' });
-        doc.moveDown();
-  
-        const totalAmount = orders.reduce((sum, order) => sum + (order.finalAmount || 0), 0);
-        const totalDiscount = orders.reduce((sum, order) => sum + (order.totalDiscount || 0), 0);
-        const couponDiscount = orders.reduce((sum, order) => sum + (order.couponDiscount || 0), 0);
-  
-        doc.text(`Total Orders: ${orders.length}`);
-        doc.text(`Total Amount: ₹${totalAmount.toFixed(2)}`);
-        doc.text(`Total Discount: ₹${totalDiscount.toFixed(2)}`);
-        doc.text(`Coupon Discount: ₹${couponDiscount.toFixed(2)}`);
-        doc.moveDown();
-  
-        doc.text('Order Details:', { underline: true });
-        orders.forEach((order, index) => {
-            doc.moveDown();
-            doc.text(`Order ${index + 1}:`);
-            doc.text(`Order ID: ${order._id}`);
-            doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`);
-            doc.text(`Customer: ${order.user?.name || 'N/A'}`);
-            doc.text(`Status: ${order.status}`);
-            doc.text(`Amount: ₹${order.finalAmount}`);
-            doc.text(`Payment: ${order.paymentMethod}`);
+        doc.fontSize(9).text(`Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`, { align: "center" });
+        doc.moveDown(1);
+
+
+
+
+        let filteredOrders = orders.filter(order => order.orderedItems.some(item => item.status === "Delivered"));
+         // Totals Summary
+         let totalAmount = 0;
+         let totalCouponDiscount = 0;
+ 
+         filteredOrders.forEach(order => {
+             totalAmount += order.finalAmount;
+             totalCouponDiscount += order.couponDiscount || 0;
+         });
+ 
+         doc.fontSize(12).text(`Total Delivered Orders: ${filteredOrders.length}`);
+         doc.text(`Total Amount: ₹${totalAmount.toFixed(2)}`);
+         doc.text(`Total Coupon Discount: ₹${totalCouponDiscount.toFixed(2)}`);
+         doc.moveDown(3);
+
+        const columnWidths = [50, 40, 50, 50, 50, 50, 40, 100, 40, 50];
+        const rowHeight = 25;
+
+        const drawRow = (columns, yPos, bold = false) => {
+            if (bold) doc.font("Helvetica-Bold");
+            else doc.font("Helvetica");
+
+            columns.forEach((col, i) => {
+                doc.rect(40 + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), yPos, columnWidths[i], rowHeight).stroke();
+                doc.fontSize(6).text(col, 42 + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), yPos + 8, {
+                    width: columnWidths[i] - 4,
+                    align: "left",
+                });
+            });
+        };
+
+        // Display Table Header
+        drawRow([
+            "Order ID", "Date", "Customer", "Phone", "Payment", "Amount", "Coupon", "Product Name", "Quantity", "Price"
+        ], doc.y, true);
+
+        filteredOrders.forEach(order => {
+            const orderYPos = doc.y + rowHeight;
+            drawRow([
+                order._id,
+                new Date(order.createdAt).toLocaleDateString(),
+                order.user?.name || "N/A",
+                order.user?.phone || "N/A",
+                order.paymentMethod,
+                `₹${order.finalAmount.toFixed(2)}`,
+                `₹${order.couponDiscount.toFixed(2)}`,
+                "", "", ""
+            ], orderYPos);
+
+            order.orderedItems.filter(item => item.status === "Delivered").forEach(item => {
+                if (doc.y > doc.page.height - 150) {
+                    doc.addPage();
+                    drawRow([
+                        "Order ID", "Date", "Customer", "Phone", "Payment", "Amount", "Coupon", "Product Name", "Quantity", "Price"
+                    ], doc.y, true);
+                }
+
+                drawRow([
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    item.productName,
+                    `x${item.quantity}`,
+                    `₹${item.priceAtPurchase.toFixed(2)}`
+                ], doc.y + rowHeight);
+            });
         });
-  
+
         doc.end();
     } catch (error) {
         console.error("Error generating PDF report:", error.message);
         res.status(500).send("Error generating report");
     }
-  };
+};
 
+
+
+
+
+
+ 
 
  
 

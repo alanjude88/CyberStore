@@ -199,6 +199,11 @@
                         <button type="button" id="applyCoupon" class="apply-coupon-btn">Apply</button>
                         <button type="button" id="removeCoupon" class="remove-coupon-btn"
                             style="display: none;">Remove</button>
+
+                            <label for="availableCoupons">Available Coupons:</label>
+                            <select id="availableCoupons">
+                                <option value="">-- Select a Coupon --</option>
+                            </select>
                     </form>
                     <p>Subtotal: ₹<span id="subtotal">
                             <%= cartTotal %>
@@ -352,5 +357,33 @@
                         Swal.fire('Error!', 'An error occurred while updating the item quantity', 'error');
                     });
             }
+
+            document.addEventListener("DOMContentLoaded", async () => {
+    const couponDropdown = document.getElementById("availableCoupons");
+    const couponInput = document.getElementById("couponCode");
+
+    try {
+        const response = await fetch("/available-coupons"); // Fetch coupons from backend
+        const coupons = await response.json();
+
+        if (coupons.length > 0) {
+            coupons.forEach(coupon => {
+                const option = document.createElement("option");
+                option.value = coupon.code;
+                option.textContent = `${coupon.code} - ₹${coupon.offerPrice} off (Min ₹${coupon.minimumPrice})`;
+                couponDropdown.appendChild(option);
+            });
+        } else {
+            couponDropdown.innerHTML = `<option value="">No Coupons Available</option>`;
+        }
+    } catch (error) {
+        console.error("Error fetching coupons:", error);
+    }
+
+    // Allow user to select a coupon but manually type it
+    couponDropdown.addEventListener("change", function () {
+        alert(`You selected coupon: ${this.value}. Please type it in the input field.`);
+    });
+});
     </script>
         

@@ -48,66 +48,68 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <% if (orders && orders.length> 0) { %>
-                                            <% orders.forEach(order=> { %>
-                                                <tr>
-                                                    <td>
-                                                        <%= (currentPage - 1) * itemsPerPage + orders.indexOf(order) + 1
-                                                            %>
-                                                    </td>
-                                                    <td>
-                                                        <%= order._id %>
-                                                    </td>
-                                                    <td>
-                                                        <%= order.user.name %>
-                                                    </td>
-                                                    <td>
-                                                        <%= new Date(order.createdAt).toLocaleDateString() %>
-                                                    </td>
-                                                    <td>
-                                                        <%= order.orderedItems.map(item=>
-                                                            item.product.productName).join(', ') %>
-                                                    </td>
-                                                    <td
-                                                        class="text-center status-<%= order.status.toLowerCase().replace(/\s+/g, '-') %>">
-                                                        <%= order.status %>
-                                                        <form class="status-form">
-                                                            <input type="hidden" name="orderId" value="<%= order._id %>">
-                                                            <select name="updatedStatus" class="form-control-sm">
-                                                                <option value="Pending" <%= order.status === 'Pending' ? 'selected' : '' %>>Pending</option>
-                                                                <option value="Processing" <%= order.status === 'Processing' ? 'selected' : '' %>>Processing</option>
-                                                                <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                                                                <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                                                                <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
-                                                                <option value="Return Request" <%= order.status === 'Return Request' ? 'selected' : '' %>>Return Request</option>
-                                                                <option value="Returned" <%= order.status === 'Returned' ? 'selected' : '' %>>Returned</option>
-                                                                <option value="Refund Completed" <%= order.status === 'Refund Completed' ? 'selected' : '' %>>Refund Completed</option>
-                                                            </select>
-                                                        </form>
-                                                        
-                                                    </td>
-                                                    <td>
-                                                        <%= order.address.name %>,
-                                                            <%= order.address.addressType %>,
-                                                                <%= order.address.landMark %>,
-                                                                    <%= order.address.city %>,
-                                                                        <%= order.address.state %>,
-                                                                            <%= order.address.pincode %>,
-                                                                                Phone: <%= order.address.phone %>,
-                                                                                    Alt Phone: <%=
-                                                                                        order.address.alterPhone %>
-                                                    </td>
-                                                    <td>
-                                                        <a href="/admin/orderList/viewOrder/<%= order._id %>"
-                                                            class="btn btn-primary btn-sm">View</a>
-                                                    </td>
-                                                </tr>
-                                                <% }); %>
-                                                    <% } else { %>
-                                                        <tr>
-                                                            <td colspan="8" class="text-center">No orders found</td>
-                                                        </tr>
+                                        <% if (orders && orders.length > 0) { %>
+                                            <% orders.forEach(order => { %>
+                                                <% order.orderedItems.forEach((item, index) => { %>
+                                                    <tr>
+                                                        <% if (index === 0) { %>
+                                                            <td rowspan="<%= order.orderedItems.length %>">
+                                                                <%= (currentPage - 1) * itemsPerPage + orders.indexOf(order) + 1 %>
+                                                            </td>
+                                                            <td rowspan="<%= order.orderedItems.length %>">
+                                                                <%= order._id %>
+                                                            </td>
+                                                            <td rowspan="<%= order.orderedItems.length %>">
+                                                                <%= order.user.name %>
+                                                            </td>
+                                                            <td rowspan="<%= order.orderedItems.length %>">
+                                                                <%= new Date(order.createdAt).toLocaleDateString() %>
+                                                            </td>
                                                         <% } %>
+                                    
+                                                        <td>
+                                                            <%= item.product.productName %>
+                                                        </td>
+                                    
+                                                        <td class="text-center">
+                                                            <%= item.status %>
+                                                            <form class="status-form">
+                                                                <input type="hidden" name="orderId" value="<%= order._id %>">
+                                                                <input type="hidden" name="productId" value="<%= item._id %>">
+                                                                <select name="updatedStatus" class="form-control-sm">
+                                                                    <option value="Pending" <%= item.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                                                                    <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                                                    <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                                                    <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                                                    <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                                                    <option value="Return Request" <%= item.status === 'Return Request' ? 'selected' : '' %>>Return Request</option>
+                                                                    <option value="Returned" <%= item.status === 'Returned' ? 'selected' : '' %>>Returned</option>
+                                                                    <option value="Refund Completed" <%= item.status === 'Refund Completed' ? 'selected' : '' %>>Refund Completed</option>
+                                                                </select>
+                                                            </form>
+                                                        </td>
+                                    
+                                                        <% if (index === 0) { %>
+                                                            <td rowspan="<%= order.orderedItems.length %>">
+                                                                <%= order.address.name %>,
+                                                                <%= order.address.addressType %>,
+                                                                <%= order.address.city %>,
+                                                                <%= order.address.state %>,
+                                                                <%= order.address.pincode %>,
+                                                                Phone: <%= order.address.phone %>
+                                                            </td>
+                                                            <td rowspan="<%= order.orderedItems.length %>">
+                                                                <a href="/admin/orderList/viewOrder/<%= order._id %>" class="btn btn-primary btn-sm">View</a>
+                                                            </td>
+                                                        <% } %>
+                                                    </tr>
+                                                <% }); %>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="8" class="text-center">No orders found</td>
+                                            </tr>
+                                        <% } %>
                                     </tbody>
                                 </table>
                             </div>
@@ -134,75 +136,74 @@
 
 
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const selectElements = document.querySelectorAll('select[name="updatedStatus"]');
-            
-                selectElements.forEach(selectElement => {
-                    selectElement.addEventListener('change', function (event) {
-                        event.preventDefault(); // Stop default form submission
-            
-                        const form = selectElement.closest('form');
-                        const orderId = form.querySelector('input[name="orderId"]').value;
-                        const updatedStatus = selectElement.value;
-            
-                        if (!orderId || !updatedStatus) return;
-            
-                        Swal.fire({
-                            title: 'Updating...',
-                            text: 'Please wait while the status is updated.',
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-            
-                        fetch('/admin/orderList/updateStatus', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ orderId, updatedStatus })
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Failed to update order');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            Swal.close();
-            
-                            if (data.message) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Status Updated',
-                                    text: `Order #${orderId} status has been updated to ${updatedStatus}.`
-                                });
-            
-                                // Update status display in the table
-                                const statusCell = form.closest('td');
-                                statusCell.className = `status-${updatedStatus.toLowerCase().replace(/\s+/g, '-')}`;
-                                statusCell.innerHTML = updatedStatus;
-                            } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Update Failed',
-                                    text: data.message || 'An unknown error occurred.'
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            Swal.close();
-                            console.error(error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Update Failed',
-                                text: 'Cannot update cancelled orders.'
-                            });
-                        });
+           document.addEventListener('DOMContentLoaded', function () {
+    const selectElements = document.querySelectorAll('select[name="updatedStatus"]');
+
+    selectElements.forEach(selectElement => {
+        selectElement.addEventListener('change', function (event) {
+            event.preventDefault();
+
+            const form = selectElement.closest('form');
+            const orderId = form.querySelector('input[name="orderId"]').value;
+            const productId = form.querySelector('input[name="productId"]').value;
+            const updatedStatus = selectElement.value;
+
+            if (!orderId || !productId || !updatedStatus) {
+                console.error("Missing orderId, productId, or updatedStatus");
+                return;
+            }
+
+            Swal.fire({
+                title: 'Updating...',
+                text: 'Please wait while the status is updated.',
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch('/admin/orderList/updateStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ orderId, productId, updatedStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Status Updated',
+                        text: `Product status updated to ${updatedStatus}.`
                     });
+
+                    const statusCell = form.closest('td');
+                    statusCell.innerHTML = updatedStatus;
+                } else {
+                    console.error("Error response:", data);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Update Failed',
+                        text: data.message || 'An unknown error occurred.'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error("Fetch error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: 'Something went wrong. Please try again.'
                 });
             });
+        });
+    });
+});
+
             </script>
             
 

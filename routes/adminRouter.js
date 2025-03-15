@@ -50,15 +50,49 @@ router.get('/restoreBrand', isAdminAuthenticated, brandController.restoreBrand);
 
 
 //productManagement routes
-router.get('/products',isAdminAuthenticated,productController.loadProducts);
-router.get('/addProducts',isAdminAuthenticated,productController.loadAddProduct);
-router.post('/products',isAdminAuthenticated,upload.array('images',3),productController.addNewProduct);
-router.patch('/blockProduct/:id',isAdminAuthenticated,productController.blockProduct);
-router.patch('/unBlockProduct/:id',isAdminAuthenticated,productController.unBlockProduct);
-router.get('/editProduct/:id',isAdminAuthenticated,productController.loadEditProduct)
-router.post('/editProduct/:id',isAdminAuthenticated,upload.array('images',3),productController.editProduct);
-router.get('/deleteSingleImage',isAdminAuthenticated,productController.deleteSingleImage);
-router.post('/deleteOffer/:productId',isAdminAuthenticated,productController.deleteOffer);
+router.get("/products", isAdminAuthenticated, productController.loadProducts);
+router.get(
+  "/addProducts",
+  isAdminAuthenticated,
+  productController.loadAddProduct
+);
+router.post(
+  "/products",
+  isAdminAuthenticated,
+  upload.array("images", 5),
+  productController.addNewProduct
+);
+router.patch(
+  "/blockProduct/:id",
+  isAdminAuthenticated,
+  productController.blockProduct
+);
+router.patch(
+  "/unBlockProduct/:id",
+  isAdminAuthenticated,
+  productController.unBlockProduct
+);
+router.get(
+  "/editProduct/:id",
+  isAdminAuthenticated,
+  productController.loadEditProduct
+);
+router.post(
+  "/editProduct/:id",
+  isAdminAuthenticated,
+  upload.array("images", 5),
+  productController.editProduct
+);
+router.post(
+  "/deleteImage",
+  isAdminAuthenticated,
+  productController.deleteSingleImage
+);
+router.post(
+  "/deleteOffer/:productId",
+  isAdminAuthenticated,
+  productController.deleteOffer
+);
 
 //bannerManagement routes
 router.get('/banners', isAdminAuthenticated, bannerController.loadBanners);

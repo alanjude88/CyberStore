@@ -1,5 +1,6 @@
 const express = require("express");
 const passport = require('passport');
+const Coupon = require("../Models/couponModel");
 
 const router = express.Router();
 const userController = require("../controllers/user/userController");
@@ -111,7 +112,7 @@ router.get('/profile/orders', isLogAuth, orderController.getUserOrders);
 router.get('/checkout', isLogAuth, orderController.getCheckoutPage);
 router.post('/cancelOrder', isLogAuth, orderController.cancelOrder);
 router.post('/verifyPayment', isLogAuth, orderController.verifyPayment);
-router.post("/ReturnOrder/:orderId", isLogAuth, orderController.ReturnOrder)
+router.post("/ReturnOrder/:orderId/:itemId", isLogAuth, orderController.ReturnOrder);
 // router.get('/orderDetails/:id', isLogAuth, orderController.orderDetails);
 router.get('/profile/orderDetails/:id', isLogAuth, orderController.orderDetails);
 router.get('/orders/:id/invoice',isLogAuth, orderController.generateInvoice)
@@ -138,6 +139,16 @@ router.post('/wallet/add-money', isLogAuth, walletController.addMoneyToWallet);
 
 router.post('/verifyCoupon', isLogAuth, couponController.verifyCoupon);
 router.post('/applyCoupon',isLogAuth, cartController.applyCoupon);
+router.get("/available-coupons", async (req, res) => {
+    try {
+      const coupons = await Coupon.find({ isListed: true }); // Fetch only listed coupons
+      res.json(coupons);
+    } catch (error) {
+      console.error("Error fetching coupons:", error);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+  
 
 
 

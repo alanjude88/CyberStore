@@ -10,13 +10,13 @@ const loadCoupons=async(req,res)=>{
     }
 }
 
-const loadAddCoupon=async(req,res)=>{
+const loadAddCoupon = async (req, res) => {
     try {
-        res.render('admin/addCoupon')
+        res.render("admin/addCoupon", { coupon: {} }); // ✅ Ensures `coupon` is always defined
     } catch (error) {
         console.log(error);
     }
-}
+};
 
 const createCoupon = async (req,res) => {
     try {

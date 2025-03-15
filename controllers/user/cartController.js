@@ -143,7 +143,7 @@ const loadCart = async (req, res) => {
 
 // Controller for adding an item to the cart
 const addItemToCart = async (req, res) => {
-    const { productId, quantity ,removeFromWishlist} = req.body;
+    const { productId, quantity, removeFromWishlist } = req.body;
     const userId = req.session.user;
 
     try {
@@ -151,8 +151,12 @@ const addItemToCart = async (req, res) => {
             return res.status(400).json({ success: false, message: 'User not logged in' });
         }
 
-        if (!productId || !quantity) {
+        if (!productId || quantity === undefined || quantity === null) {
             return res.status(400).json({ success: false, message: 'Product ID and quantity are required' });
+        }
+
+        if (quantity < 1) {
+            return res.status(400).json({ success: false, message: 'Quantity must be at least 1' });
         }
 
         let cart = await Cart.findOne({ userId: userId });
@@ -166,29 +170,38 @@ const addItemToCart = async (req, res) => {
         }
 
         const productIndex = cart.items.findIndex(item => item.productId.toString() === productId);
-        let newQuantity = quantity;
 
         if (productIndex !== -1) {
-            newQuantity += cart.items[productIndex].quantity;
-            cart.items[productIndex].quantity = newQuantity;
-            cart.items[productIndex].totalPrice = product.salePrice * newQuantity;
-            return res.status(200).json({ 
-                success: false, 
-                message: 'Product is already in your cart. Update quantity in the cart if needed.' 
-            });
+            let newQuantity = cart.items[productIndex].quantity + quantity;
+
+            if (newQuantity < 1) {
+                // Remove item from cart if quantity goes below 1
+                cart.items.splice(productIndex, 1);
+            } else {
+                // Update quantity and total price
+                cart.items[productIndex].quantity = newQuantity;
+                cart.items[productIndex].totalPrice = product.salePrice * newQuantity;
+                return res.status(200).json({ 
+                    success: false, 
+                    message: 'Product is already in your cart. Update quantity in the cart if needed.' 
+                });
+            }
         } else {
-            cart.items.push({
-                productId,
-                quantity: newQuantity,
-                price: product.salePrice,
-                totalPrice: product.salePrice * newQuantity
-            });
+            // Ensure only valid quantities are added
+            if (quantity >= 1) {
+                cart.items.push({
+                    productId,
+                    quantity: quantity,
+                    price: product.salePrice,
+                    totalPrice: product.salePrice * quantity
+                });
+            }
         }
 
-        if(removeFromWishlist){
-            const wishlist=await Wishlist.findOne({userId:userId});
-            if(wishlist){
-                wishlist.products=wishlist.products.filter(item=>item.productId.toString()!==productId);
+        if (removeFromWishlist) {
+            const wishlist = await Wishlist.findOne({ userId: userId });
+            if (wishlist) {
+                wishlist.products = wishlist.products.filter(item => item.productId.toString() !== productId);
                 await wishlist.save();
             }
         }
@@ -200,6 +213,8 @@ const addItemToCart = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+
+
 
 // Controller for removing an item from the cart
 const removeItemFromCart = async (req, res) => {
@@ -236,9 +251,16 @@ const updateQuantity = async (req, res) => {
 
         const item = cart.items.find(item => item.productId.toString() === productId);
         if (item) {
-            if (quantity > 3) {
-                return res.status(400).json({ success: false, message: 'You can only purchase a maximum of 3 units per product' });
+            if (quantity > product.quantity) {
+                return res.status(400).json({ success: false, message: `Only ${product.quantity} units available in stock`});
             }
+            if (quantity > 3) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'You can only purchase a maximum of 3 units per product' 
+                });
+            }
+    
             item.quantity = quantity;
             item.totalPrice = item.price * quantity;
             await cart.save();

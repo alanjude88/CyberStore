@@ -252,12 +252,12 @@ const securePassword = async (password) => {
 const verifyOtp = async (req, res) => {
     try {
         const { otp } = req.body;
-        console.log('Received OTP:', otp, 'Type:', typeof otp);
-        console.log('Stored OTP:', req.session.userOtp, 'Type:', typeof req.session.userOtp);
+        console.log('🔢 Received OTP:', otp, 'Type:', typeof otp);
+        console.log('✅ Stored OTP:', req.session.userOtp, 'Type:', typeof req.session.userOtp);
 
-        // Check  session exists or mot
+        // Check if session data exists
         if (!req.session.userOtp || !req.session.userData || !req.session.otpExpiry) {
-            console.log('Session missing required data:', {
+            console.log('❌ Missing session data:', {
                 hasOtp: !!req.session.userOtp,
                 hasUserData: !!req.session.userData,
                 hasExpiry: !!req.session.otpExpiry
@@ -268,9 +268,10 @@ const verifyOtp = async (req, res) => {
             });
         }
 
+        // Check if OTP is expired
         const now = Date.now();
         const expiryTime = req.session.otpExpiry;
-        console.log('Time check:', {
+        console.log('⏳ Time Check:', {
             now,
             expiryTime,
             difference: now - expiryTime,
@@ -281,18 +282,19 @@ const verifyOtp = async (req, res) => {
             delete req.session.userOtp;
             delete req.session.userData;
             delete req.session.otpExpiry;
-            
+
             return res.status(400).json({
                 success: false,
                 message: 'OTP has expired. Please try signing up again.'
             });
         }
 
+        // Trim & compare OTP
         const receivedOtp = String(otp).trim();
         const storedOtp = String(req.session.userOtp).trim();
 
         if (receivedOtp !== storedOtp) {
-            console.log('OTP mismatch:', {
+            console.log('❌ OTP Mismatch:', {
                 received: receivedOtp,
                 stored: storedOtp,
                 receivedLength: receivedOtp.length,
@@ -304,9 +306,11 @@ const verifyOtp = async (req, res) => {
             });
         }
 
+        // Retrieve user data from session
         const user = req.session.userData;
         const passwordHash = await securePassword(user.password);
 
+        // Save user in database
         const saveUserData = new User({
             name: user.name,
             email: user.email,
@@ -315,29 +319,33 @@ const verifyOtp = async (req, res) => {
         });
 
         await saveUserData.save();
-        console.log('User saved successfully:', saveUserData._id);
+        console.log('✅ User saved successfully:', saveUserData._id);
 
+        // Clear OTP-related session data
         delete req.session.userOtp;
         delete req.session.userData;
         delete req.session.otpExpiry;
 
+        // ✅ Log in the user automatically
+        req.session.user = { _id: saveUserData._id };
+        await req.session.save(); // Ensure session is saved before responding
 
-        req.session.user = saveUserData._id;
-        await req.session.save();  
+        console.log('🚀 User logged in successfully:', req.session.user);
 
-        return  res.json({
+        return res.json({
             success: true,
             message: 'Email verified successfully!',
             redirect: '/' 
         });
     } catch (error) {
-        console.error('OTP verification error:', error);
+        console.error('❌ OTP Verification Error:', error);
         return res.status(500).json({
             success: false,
             message: 'An error occurred during verification'
         });
     }
-}
+};
+
 
 const resendOtp = async(req,res)=>{
     try {

@@ -9,9 +9,13 @@
 
     <h1>Order Details</h1>
     <p>Status:
-        <span class="order-status <%= order.status.toLowerCase().replace(/\s+/g, '-') %>">
-            <%= order.status %>
-        </span>
+        <% if (order && order.overallStatus) { %>
+            <span class="order-status <%= order.overallStatus ? order.overallStatus.toLowerCase().replace(/\s+/g, '-') : '' %>">
+                <%= order.overallStatus %>
+            </span>
+        <% } else { %>
+            <span class="order-status">Unknown</span>
+        <% } %>
     </p>
 
     <div class="order-header">
@@ -47,9 +51,9 @@
         <div class="summary-box">
             <h3>Order Summary</h3>
             <p>Item(s) Subtotal: ₹<%= order.totalPrice %></p>
-            <p>Total: ₹<%= order.totalPrice + order.shippingCost %></p>
+            
             <p>Coupon Applied: -₹<%= order.couponDiscount %></p>
-            <p><strong>Grand Total: ₹<%= order.finalAmount %></strong></p>
+            <p><strong>Grand Total: ₹<%= order.finalAmountog %></strong></p>
         </div>
     </div>
 </div>

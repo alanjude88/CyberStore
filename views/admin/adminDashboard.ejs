@@ -9,9 +9,10 @@
                 orderStats: {
                     total: <%= totalOrders %>,
                     active: <%= activeOrders %>,
-                    cancelled: <%= cancelledOrders %>,
-                    completed: <%= completedOrders %>,
-                    returned: <%= returnedOrders %>
+                    cancelled: <%= cancelledItems %>,
+                    completed: <%= completedOrdersCount %>,
+                    returned: <%= returnedItems %>
+                    couponsApplied:<%= couponsApplied %>
                 },
                 revenueStats: {
                     total: <%= totalRevenue %>,
@@ -81,30 +82,16 @@
                     </div>
                 </div>
 
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Active Orders</h3>
-                        <div class=" active-orders stat-number">
-                            <%= activeOrders%>
-                        </div>
-                        <div class="stat-change">
-                            <i class="fas fa-arrow-up"></i>
-                            <span></span>
-                        </div>
-                    </div>
-                </div>
+               
 
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-times-circle"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>Cancelled Orders</h3>
+                        <h3>Cancelled Items</h3>
                         <div class="stat-number cancelled-orders">
-                            <%= cancelledOrders %>
+                            <%= cancelledItems %>
                         </div>
                         <div class="stat-change">
                             <i class="fas fa-arrow-down"></i>
@@ -120,7 +107,7 @@
                     <div class="stat-info">
                         <h3>Completed Orders</h3>
                         <div class="stat-number completed-orders">
-                            <%= completedOrders %>
+                            <%= completedOrdersCount %>
                         </div>
                         <div class="stat-change">
                             <i class="fas fa-arrow-up"></i>
@@ -134,9 +121,9 @@
                         <i class="fas fa-undo"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>Return Orders</h3>
+                        <h3>Return Items</h3>
                         <div class="stat-number returned-orders">
-                            <%= returnedOrders %>
+                            <%= returnedItems %>
                         </div>
                         <div class="stat-change">
                             <i class="fas fa-arrow-up"></i>
@@ -228,29 +215,19 @@
             
                 <button id="applyFilter" class="btn btn-primary btn-sm">Apply Filter</button>
             </div>
-            
 
-            <!-- <div class="date-filter p-3 border rounded bg-light shadow-sm d-flex flex-wrap align-items-center gap-3">   
-                <select id="dateRangeFilter" class="form-control form-control-sm w-auto">
-                    <option value="custom" <%= selectedFilter === 'custom' ? 'selected' : '' %>>Custom Date Range</option>
-                    <option value="daily" <%= selectedFilter === 'daily' ? 'selected' : '' %>>Today</option>
-                    <option value="weekly" <%= selectedFilter === 'weekly' ? 'selected' : '' %>>This Week</option>
-                    <option value="monthly" <%= selectedFilter === 'monthly' ? 'selected' : '' %>>This Month</option>
-                    <option value="yearly" <%= selectedFilter === 'yearly' ? 'selected' : '' %>>This Year</option>
-                </select>
-            
-                <div id="customDateInputs" class="d-flex align-items-center gap-2">
-                    <label for="startDate" class="form-label mb-0">Start Date:</label>
-                    <input type="date" id="startDate" class="form-control form-control-sm w-auto">
-            
-                    <label for="endDate" class="form-label mb-0">End Date:</label>
-                    <input type="date" id="endDate" class="form-control form-control-sm w-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Sales Overview</h2>
                 </div>
+                <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
             
-                <button id="applyFilter" class="btn btn-primary btn-sm">Apply Filter</button>
-            </div> -->
-
-
+            
+           
             <!-- Top Brands -->
 
             <div class="card">
@@ -323,7 +300,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>Product</th>
-                                <th>Image</th>
+                                
                                 <th>Quantity Sold</th>
                                 <th>Total Revenue (₹)</th>
                             </tr>
@@ -337,9 +314,7 @@
                                     <td>
                                         <%= product.productName %>
                                     </td>
-                                    <td><img style="max-width: 100px; height: auto;"
-                                            src="/img/products/<%= product.productImage[0] %>"
-                                            alt="<%= product.productName %> "></td>
+                                    
                                     <td>
                                         <%= product.totalQuantity %>
                                     </td>
@@ -400,180 +375,211 @@
 
             <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+ document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document.getElementById("revenueChart").getContext("2d");
+
+    // Get the filter value from the backend (this should be passed from the server or set in a global JS variable)
+    const filterValue = "<%= filterValue %>"; // Ensure this is properly injected
+    const customStartDate = "<%= startDate %>";
+    const customEndDate = "<%= endDate %>";
+
+    // Set x-axis label dynamically
+    let xAxisLabel = "";
+    switch (filterValue) {
+        case "daily":
+            xAxisLabel = "Today";
+            break;
+        case "weekly":
+            xAxisLabel = "This Week";
+            break;
+        case "monthly":
+            xAxisLabel = "This Month";
+            break;
+        case "yearly":
+            xAxisLabel = "This Year";
+            break;
+        case "custom":
+            xAxisLabel = `From ${customStartDate} to ${customEndDate}`;
+            break;
+        default:
+            xAxisLabel = "Total Revenue";
+    }
+
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: [xAxisLabel], // Use dynamic label
+            datasets: [{
+                label: "Total Revenue",
+                data: [<%= totalRevenueForSales %>], // Inject revenue data
+                backgroundColor: "rgba(75, 192, 192, 0.5)",
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+});
+</script>
+            
 
             <script>
                 // Format currency in Indian Rupees
-                const formatCurrency = (value) => {
-                    return '₹' + value.toLocaleString('en-IN', {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2
-                    });
-                };
+                // Format currency in Indian Rupees
+const formatCurrency = (value) => {
+    return '₹' + value.toLocaleString('en-IN', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2
+    });
+};
 
-                // Initialize everything when the DOM is loaded
-                document.addEventListener('DOMContentLoaded', () => {
+// Initialize everything when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.dashboardData && typeof window.dashboardData === 'object') {
+        if (window.dashboardData.topBrands) {
+            initializeBrandSalesChart(window.dashboardData.topBrands);
+        }
+        if (window.dashboardData.orderStats) {
+            initializeAdminChart(window.dashboardData.orderStats);
+        }
+    } else {
+        console.error('Dashboard data not found or invalid');
+    }
+});
 
-                    // Check if dashboard data exists
-                    if (window.dashboardData) {
-                        // Initialize brand sales chart
-                        if (window.dashboardData.topBrands) {
-                            initializeBrandSalesChart(window.dashboardData.topBrands);
-                        }
+// Update Clock
+function updateClock() {
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+    document.getElementById('clock').textContent = time;
+}
+updateClock();
+setInterval(updateClock, 1000);
 
-                        // Initialize admin chart with order statistics
-                        if (window.dashboardData.orderStats) {
-                            initializeAdminChart(window.dashboardData.orderStats);
-                        }
-                    } else {
-                        console.error('Dashboard data not found');
-                    }
-                });
-            </script>
+// Update Date Range (Only Once per Day)
+function updateDateRange() {
+    const end = new Date();
+    const start = new Date();
+    start.setMonth(end.getMonth() - 1);
 
-<!-- time -->
-            <script>
-                function updateClock() {
-                    const now = new Date();
-                    const time = now.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: true
-                    });
-                    document.getElementById('clock').textContent = time;
-                }
+    document.getElementById('dateRange').textContent = 
+        `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - 
+         ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+}
+updateDateRange();
+setInterval(updateDateRange, 86400000); // Update once a day
 
-                updateClock();
-                setInterval(updateClock, 1000);
+// Product Chart
+document.addEventListener("DOMContentLoaded", () => {
+    const topProducts = <%- JSON.stringify(topProducts || []) %>;
+    if (!Array.isArray(topProducts) || topProducts.length === 0) {
+        console.warn("No data available for top products chart.");
+        return;
+    }
 
-                function updateDateRange() {
-                    const end = new Date();
-                    const start = new Date();
-                    start.setMonth(end.getMonth() - 1);
+    const productLabels = topProducts.map((product) => product.productName);
+    const productQuantities = topProducts.map((product) => product.totalQuantity);
 
-                    const dateString = `${start.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                    })} - ${end.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                    })}`;
+    const chartCanvas = document.getElementById('topProductsChart');
+    if (!chartCanvas) {
+        console.error("Canvas element 'topProductsChart' not found.");
+        return;
+    }
 
-                    document.getElementById('dateRange').textContent = dateString;
-                }
-
-                updateDateRange();
-                setInterval(updateDateRange, 1000);
-            </script>
-
-            <!-- product chartss   -->
-            <script>
-                document.addEventListener("DOMContentLoaded", () => {
-                    // Ensure topProducts data is available
-                    const topProducts = <%- JSON.stringify(topProducts) %> || [];
-            
-                    if (!Array.isArray(topProducts) || topProducts.length === 0) {
-                        console.warn("No data available for top products chart.");
-                        return; // Exit if there's no data
-                    }
-            
-                    const productLabels = topProducts.map((product) => product.productName);
-                    const productQuantities = topProducts.map((product) => product.totalQuantity);
-            
-                    // Ensure the canvas element exists
-                    const chartCanvas = document.getElementById('topProductsChart');
-                    if (!chartCanvas) {
-                        console.error("Canvas element with ID 'topProductsChart' not found.");
-                        return;
-                    }
-            
-                    const ctx = chartCanvas.getContext('2d');
-            
-                    new Chart(ctx, {
-                        type: 'doughnut', 
-                        data: {
-                            labels: productLabels,
-                            datasets: [{
-                                label: 'Top Products by Quantity',
-                                data: productQuantities,
-                                backgroundColor: [
-                                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-                                    '#FF9F40', '#E7E9ED', '#FF6384', '#36A2EB', '#FFCE56',
-                                ],
-                                borderWidth: 1,
-                            }],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,  // Helps in rendering inside containers
-                            plugins: {
-                                legend: {
-                                    position: 'top',
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function (tooltipItem) {
-                                            const productName = productLabels[tooltipItem.dataIndex];
-                                            const quantity = productQuantities[tooltipItem.dataIndex];
-                                            return `${productName}: ${quantity}`;
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    });
-                });
-            </script>
-            
-            <!-- brand chart -->
-            <script>
-                const topBrands = <%- JSON.stringify(topBrands) %>;
-
-                const brandLabels = topBrands.map((brand) => brand.brandName);
-                const brandSales = topBrands.map((brand) => brand.totalSales);
-
-                const ctxBrands = document.getElementById('topBrandsChart').getContext('2d');
-                new Chart(ctxBrands, {
-                    type: 'bar',
-                    data: {
-                        labels: brandLabels,
-                        datasets: [
-                            {
-                                label: 'Sales (₹)',
-                                data: brandSales,
-                                backgroundColor: '#36A2EB',
-                                borderColor: '#0369A1',
-                                borderWidth: 1,
-                            },
-                        ],
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                        },
-                        scales: {
-                            x: {
-                                title: { display: true, text: 'Brands' },
-                            },
-                            y: {
-                                title: { display: true, text: 'Total Sales (₹)' },
-                            },
+    const ctx = chartCanvas.getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: productLabels,
+            datasets: [{
+                label: 'Top Products by Quantity',
+                data: productQuantities,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#E7E9ED'],
+                borderWidth: 1,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: (tooltipItem) => {
+                            return `${productLabels[tooltipItem.dataIndex]}: ${productQuantities[tooltipItem.dataIndex]}`;
                         },
                     },
-                });
+                },
+            },
+        },
+    });
+});
+
+// Brand Chart
+document.addEventListener("DOMContentLoaded", () => {
+    const topBrands = <%- JSON.stringify(topBrands || []) %>;
+    if (!Array.isArray(topBrands) || topBrands.length === 0) {
+        console.warn("No data available for top brands chart.");
+        return;
+    }
+
+    const brandLabels = topBrands.map((brand) => brand.brandName);
+    const brandSales = topBrands.map((brand) => brand.totalSales);
+
+    const brandChartCanvas = document.getElementById('topBrandsChart');
+    if (!brandChartCanvas) {
+        console.error("Canvas element 'topBrandsChart' not found.");
+        return;
+    }
+
+    const ctxBrands = brandChartCanvas.getContext('2d');
+    new Chart(ctxBrands, {
+        type: 'bar',
+        data: {
+            labels: brandLabels,
+            datasets: [{
+                label: 'Sales (₹)',
+                data: brandSales,
+                backgroundColor: '#36A2EB',
+                borderColor: '#0369A1',
+                borderWidth: 1,
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { title: { display: true, text: 'Brands' } },
+                y: { title: { display: true, text: 'Total Sales (₹)' } },
+            },
+        },
+    });
+});
+
             </script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+   document.addEventListener('DOMContentLoaded', () => {
     const dateRangeFilter = document.getElementById('dateRangeFilter');
     const customDateInputs = document.getElementById('customDateInputs');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const applyFilterButton = document.getElementById('applyFilter');
+
+    if (!dateRangeFilter || !customDateInputs || !startDateInput || !endDateInput || !applyFilterButton) {
+        console.error("One or more filter elements are missing in the DOM.");
+        return;
+    }
 
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
@@ -582,15 +588,23 @@
     startDateInput.setAttribute('max', today);
     endDateInput.setAttribute('max', today);
 
+    // Set initial visibility of custom date fields
+    customDateInputs.style.display = dateRangeFilter.value === 'custom' ? 'flex' : 'none';
+
     // Toggle custom date inputs based on filter selection
     dateRangeFilter.addEventListener('change', () => {
         customDateInputs.style.display = dateRangeFilter.value === 'custom' ? 'flex' : 'none';
     });
 
+    // Handle dynamic min value for end date
+    startDateInput.addEventListener('change', () => {
+        endDateInput.setAttribute('min', startDateInput.value);
+    });
+
     // Validate dates before applying the filter
     applyFilterButton.addEventListener('click', () => {
         const filterType = dateRangeFilter.value;
-        let queryParams = `filterValue=${filterType}`;
+        let queryParams = `filterValue=${encodeURIComponent(filterType)}`;
 
         if (filterType === 'custom') {
             const startDate = startDateInput.value;
@@ -606,7 +620,7 @@
                 return;
             }
 
-            queryParams += `&startDate=${startDate}&endDate=${endDate}`;
+            queryParams += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
         }
 
         // Redirect to admin dashboard with the selected filter

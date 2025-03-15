@@ -511,168 +511,39 @@
         </div>
     </section>
 
-    <!-- Featured Products  -->
-    <section class="featured-products-grid" style="background-color: #000; padding: 60px 0">
-        <div class="container" style="max-width: 1400px; margin: 0 auto; padding: 0 20px">
-            <h2 style="color: #4b0082; text-align: center; margin-bottom: 40px">
-                FEATURED PRODUCTS
-            </h2>
-            <div class="products-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px">
-                <div class="product-item" style="background: #1a0340; padding: 20px; border-radius: 10px">
-                    <img src="/img/monitor1.jpg" alt="Gaming Monitor"
-                        style="width: 100%; border-radius: 5px; margin-bottom: 15px" />
-                    <div class="rating" style="color: gold; margin-bottom: 10px">★★★★☆</div>
-                    <h3 style="color: #fff; margin-bottom: 10px">
-                        HP Ultra-Detailed Gaming 32"
-                    </h3>
-                    <p style="color: #ff0844">₹22,999</p>
-                </div>
+    
+   
+   
 
-                <div class="product-item" style="background: #1a0340; padding: 20px; border-radius: 10px">
-                    <img src="/img/monitor2.jpg" alt="Gaming Monitor"
-                        style="width: 100%; border-radius: 5px; margin-bottom: 15px" />
-                    <div class="rating" style="color: gold; margin-bottom: 10px">★★★★★</div>
-                    <h3 style="color: #fff; margin-bottom: 10px">
-                        Samsung 27-inch QHD Monitor
-                    </h3>
-                    <p style="color: #ff0844">₹24,999</p>
-                </div>
-
-                <div class="product-item" style="background: #1a0340; padding: 20px; border-radius: 10px">
-                    <img src="/img/pc1.jpg" alt="Gaming PC"
-                        style="width: 100%; border-radius: 5px; margin-bottom: 15px" />
-                    <div class="rating" style="color: gold; margin-bottom: 10px">★★★★☆</div>
-                    <h3 style="color: #fff; margin-bottom: 10px">Custom Gaming PC</h3>
-                    <p style="color: #ff0844">₹89,999</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="search-section" style="background-color: #11012b; padding: 40px 0">
-        <div class="container" style="max-width: 600px; margin: 0 auto; padding: 0 20px">
-            <div class="search-box" style="display: flex; gap: 10px">
-                <input type="text" placeholder="Search here..." style="
-          flex: 1;
-          padding: 12px 20px;
-          border: none;
-          border-radius: 5px;
-          background: #1a0340;
-          color: #fff;
-        " />
-                <button style="
-          padding: 12px 30px;
-          background: #4b0082;
-          color: #fff;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-        ">
-                    Search
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- <script>
-        function addToCart(productId) {
-            fetch('/cart/addItem', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ productId, quantity: 1 })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('Added!', 'The item has been added to your cart.', 'success');
-                    } else {
-                        Swal.fire('Error!', 'Failed to add the item to your cart.', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire('Error!', 'An error occurred while adding the item to your cart.', 'error');
-                });
-        }
-
-        function addToFavorites(productId) {
-            fetch("/favorites/addItem", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId }),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        Swal.fire(
-                            "Added!",
-                            "The item has been added to your favorites.",
-                            "success"
-                        );
-                    } else {
-                        Swal.fire(
-                            "Error!",
-                            "Failed to add the item to your favorites.",
-                            "error"
-                        );
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error:", error);
-                    Swal.fire(
-                        "Error!",
-                        "An error occurred while adding the item to your favorites.",
-                        "error"
-                    );
-                });
-        }
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll(".product-card").forEach((card) => {
-                const productId = card
-                    .querySelector("a")
-                    .getAttribute("href")
-                    .split("/")
-                    .pop();
-                card.querySelector(".add-to-cart").addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    addToCart(productId);
-                });
-                card.querySelector(".add-to-favorites").addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    addToFavorites(productId);
-                });
-                card.querySelector(".product-title").addEventListener("click", (e) => {
-                    e.stopPropagation();
-                });
-            });
-        });
-    </script> -->
+   
    
     <script>
-        function addToCart(productId) {
-            fetch('/cart/addItem', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ productId, quantity: 1 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire('Added!', 'The item has been added to your cart.', 'success');
-                } else {
-                    Swal.fire('Error!', 'Failed to add the item to your cart.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('Error!', 'An error occurred while adding the item to your cart.', 'error');
-            });
+        function addToCart(productId, availableStock) {
+    if (availableStock < 1) {
+        Swal.fire('Out of Stock', 'This item is currently unavailable.', 'warning');
+        return;
+    }
+
+    fetch('/cart/addItem', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId, quantity: 1 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Added!', 'The item has been added to your cart.', 'success');
+        } else {
+            Swal.fire('Error!', data.message || 'Failed to add the item to your cart.', 'error');
         }
-    
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error!', 'An error occurred while adding the item to your cart.', 'error');
+    });
+}
         function addToFavorites(productId) {
             fetch('/wishlist/addItem', {  // Corrected endpoint
                 method: 'POST',

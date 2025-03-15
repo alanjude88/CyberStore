@@ -1,24 +1,27 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const { Schema } = mongoose;
-const { v4: uuidv4 } = require('uuid');
 
 const orderSchema = new Schema({
-    orderId: {
-        type: String,
-        default: () => uuidv4(),
-        unique: true,
-    },
-    orderedItems: [{  // ✅ Kept only one orderedItems field
+    orderId: { type: String, default: () => require('uuid').v4(), unique: true },
+    orderedItems: [{  
         product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-        productName: { type: String, required:true },  // ✅ Stores the product name at the time of order
+        productName: { type: String, required: true },
+        productImage: { type: String, required: true },
         quantity: { type: Number, required: true },
-        priceAtPurchase: { type: Number, required: true }
+        priceAtPurchase: { type: Number, required: true },
+        status: {  
+            type: String,
+            enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', 'Returned'],
+            default: 'Processing'
+        },
+        paymentStatus: {  
+            type: String,
+            enum: ['Pending', 'Completed', 'Refunded'],
+            default: 'Pending'
+        },
+        deliveredDate: { type: Date, default: null } // ✅ Added delivery date for each item
     }],
-    user: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',  
-        required: true
-    },
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     address: {
         addressType: { type: String, required: true },
         name: { type: String, required: true },
@@ -29,29 +32,26 @@ const orderSchema = new Schema({
         phone: { type: String, required: true },
         alterPhone: { type: String, required: true }
     },
-    categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
     paymentMethod: { type: String, enum: ['COD', 'Bank', 'Wallet', 'Razorpay'] },
-    paymentStatus: {
+    totalPrice: { type: Number, required: true },
+    finalAmount: { type: Number, required: true },
+    finalAmountog:{type:Number,default:0},
+    discount: { type: Number, default: 0 },
+    couponDiscount: { type: Number, default: 0 }, 
+    deliveryCharge: { type: Number },
+    invoiceDate: { type: Date },
+    deliveredDate: { type: Date, default: null }, // ✅ Kept the order-level delivered date
+    overallStatus: {  
         type: String,
-        enum: ['Pending', 'Completed', 'Failed', 'Refunded', 'Paid'], // ✅ Added 'Paid'
+        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+        default: 'Processing'
+    },
+    overallPaymentStatus: {  
+        type: String,
+        enum: ['Pending', 'Completed', 'Failed', 'Refunded'],
         default: 'Pending'
     },
-    subTotal: { type: Number, required: true },
-    totalPrice: { type: Number, required: true },
-    discount: { type: Number, default: 0 },
-    finalAmount: { type: Number, required: true },
-    deliveryCharge: { type: Number },
-    deliveryMethod: { type: String },
-    invoiceDate: { type: Date },
-    deliveredDate: { type: Date, default: null },  // ✅ Keeps track of delivery date
-    status: {
-        type: String,
-        required: true,
-        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Request', 'Returned', 'Refund Completed']
-    },
-    couponApplied: { type: Boolean, default: false },
-    couponDiscount: { type: Number, default: null },
-    couponCode: { type: String, default: null },
+   
     createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

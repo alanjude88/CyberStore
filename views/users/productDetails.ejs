@@ -404,121 +404,51 @@
 
 <!-- Include Medium Zoom Script -->
 <script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script>
+<!-- Include Panzoom Script -->
+<script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.0.0/dist/panzoom.min.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Initialize Medium Zoom for the main image
         const zoomableImage = document.querySelector('#currentImage');
         const zoomInstance = mediumZoom(zoomableImage, { background: 'rgba(0, 0, 0, 0.8)' });
 
+        // Add Panzoom for scroll, drag, and pinch zoom
+        const panzoom = Panzoom(zoomableImage, { 
+            maxScale: 5,
+            contain: 'outside',
+            canvas: true 
+        });
+
+        // Enable Panzoom interaction
+        zoomableImage.parentElement.addEventListener('wheel', panzoom.zoomWithWheel);
+        
         // Switch Image Functionality
         function switchImage(imageSrc) {
             const currentImage = document.getElementById('currentImage');
             currentImage.src = '/img/products/' + imageSrc;
 
-            // Update Medium Zoom image after switching
-            zoomInstance.detach(); // Detach the zoom instance
-            zoomInstance.attach(currentImage); // Attach to the new image
+            // Update Medium Zoom and Panzoom image after switching
+            zoomInstance.detach();
+            zoomInstance.attach(currentImage);
+            panzoom.reset();  // Reset zoom level and position for the new image
         }
+
+        // Toggle between Medium Zoom and Panzoom
+        zoomableImage.addEventListener('click', function (event) {
+            if (panzoom.getScale() > 1) {
+                panzoom.reset();  // If zoomed, reset the zoom
+            } else {
+                zoomInstance.show();  // Otherwise, trigger Medium Zoom
+            }
+        });
 
         // Expose the switchImage function globally
         window.switchImage = switchImage;
     });
 </script>
 
-    <!-- <script>
-        $(document).ready(function () {
-            function initializeMagnifier(imageID) {
-                $("#" + imageID).elevateZoom({
-                    zoomType: "lens",
-                    lensShape: "round",
-                    lensSize: 150
-                });
-            }
-
-            initializeMagnifier('currentImage');
-
-            function switchImage(imageSrc) {
-                const currentImage = $('#currentImage');
-                currentImage.data('zoomImage', '/img/products/' + imageSrc).attr('src', '/img/products/' + imageSrc);
-
-
-                $.removeData(currentImage, 'elevateZoom');
-                $('.zoomContainer').remove();
-
-                initializeMagnifier('currentImage');
-            }
-
-            $(".thumbnail img").click(function () {
-                switchImage($(this).attr("src").replace('/img/products/', ''));
-            });
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const descriptionElement = document.querySelector(".product-description");
-            if (descriptionElement) {
-                descriptionElement.innerHTML = descriptionElement.innerHTML.replace(/\n/g, "<br>");
-            }
-        });
-
-        function magnify(imgID, zoom) {
-            var img, glass, w, h, bw;
-            img = document.getElementById(imgID);
-
-            glass = document.createElement("DIV");
-            glass.setAttribute("class", "img-magnifier-glass");
-
-            img.parentElement.insertBefore(glass, img);
-
-            glass.style.backgroundImage = "url('" + img.src + "')";
-            glass.style.backgroundRepeat = "no-repeat";
-            glass.style.backgroundSize = (img.width * zoom) + "px " + (img.height * zoom) + "px";
-            bw = 3;
-            w = glass.offsetWidth / 2;
-            h = glass.offsetHeight / 2;
-
-            glass.addEventListener("mousemove", moveMagnifier);
-            img.addEventListener("mousemove", moveMagnifier);
-
-            glass.addEventListener("touchmove", moveMagnifier);
-            img.addEventListener("touchmove", moveMagnifier);
-
-            function moveMagnifier(e) {
-                var pos, x, y;
-                e.preventDefault();
-                pos = getCursorPos(e);
-                x = pos.x;
-                y = pos.y;
-                if (x > img.width - w / zoom) { x = img.width - w / zoom; }
-                if (x < w / zoom) { x = w / zoom; }
-                if (y > img.height - h / zoom) { y = img.height - h / zoom; }
-                if (y < h / zoom) { y = h / zoom; }
-                glass.style.left = x - w + "px";
-                glass.style.top = y - h + "px";
-                glass.style.backgroundPosition = "-" + (x * zoom - w + bw) + "px -" + (y * zoom - h + bw) + "px";
-            }
-
-            function getCursorPos(e) {
-                var a, x = 0, y = 0;
-                e = e || window.event;
-                a = img.getBoundingClientRect();
-                x = e.pageX - a.left;
-                y = e.pageY - a.top;
-                x = x - window.pageXOffset;
-                y = y - window.pageYOffset;
-                return { x: x, y: y };
-            }
-        }
-
-        function switchImage(imageSrc) {
-            const currentImage = document.getElementById('currentImage');
-            currentImage.src = '/img/products/' + imageSrc;
-        }
-
-        magnify("currentImage", 3);
-
-    </script>
-    <script src="path/to/jquery.elevateZoom.min.js"></script> -->
+    
 
 
     <script> 

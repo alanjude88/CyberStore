@@ -78,10 +78,11 @@
                             <thead>
                                 <tr>
                                     <th>Order ID</th>
-                                    <th>Customer</th>
+                                    
                                     <th>Date</th>
-                                    <th>Status</th>
+                                   
                                     <th>Discount</th>
+                                    <th>Coupon Discount</th>
                                     <th>Final Amount</th>
                                 </tr>
                             </thead>
@@ -89,11 +90,13 @@
                                 <% orders.forEach(order => { %>
                                     <tr>
                                         <td><%= order._id %></td>
-                                        <td><%= order.user?.name || 'N/A' %></td>
+                                        
                                         <td><%= new Date(order.createdAt).toLocaleDateString() %></td>
-                                        <td><%= order.status %></td>
+                                        
                                         <td>₹<%= Math.floor(order.totalDiscount) %></td>
+                                        <td>₹<%= Math.floor(order.couponDiscount) %></td>
                                         <td>₹<%= Math.floor(order.finalAmount) %></td>
+
                                     </tr>
                                 <% }) %>
                             </tbody>

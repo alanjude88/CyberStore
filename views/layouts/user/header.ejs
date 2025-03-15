@@ -523,7 +523,26 @@
         </div>
 
         <form action="/users/shop" method="get" class="search-form">
-            <input type="text" name="searchWord" placeholder="Search...">
+            <input type="text" name="searchWord" placeholder="Search..." value="<%= typeof searchWord !== 'undefined' ? searchWord : '' %>">
+        
+            <!-- Preserve filters by adding hidden inputs -->
+            <% if (typeof selectedCategories !== 'undefined') { %>
+                <% selectedCategories.forEach(category => { %>
+                    <input type="hidden" name="categories" value="<%= category %>">
+                <% }) %>
+            <% } %>
+        
+            <% if (typeof selectedBrands !== 'undefined') { %>
+                <% selectedBrands.forEach(brand => { %>
+                    <input type="hidden" name="brands" value="<%= brand %>">
+                <% }) %>
+            <% } %>
+        
+            <input type="hidden" name="minPrice" value="<%= typeof minPrice !== 'undefined' ? minPrice : 5000 %>">
+            <input type="hidden" name="maxPrice" value="<%= typeof maxPrice !== 'undefined' ? maxPrice : 500000 %>">
+            <input type="hidden" name="sortBy" value="<%= typeof sortWays !== 'undefined' ? sortWays : 'default' %>">
+            
+        
             <button type="submit" class="search-btn">
                 <i class="fas fa-search"></i>
             </button>

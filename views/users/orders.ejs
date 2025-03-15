@@ -1,163 +1,206 @@
 <%- include('../layouts/user/header.ejs') %>
 
-    <style>
-        body {
-            background-color: #dacbf2;
-        }
+<style>
+    body {
+        background-color: #dacbf2;
+    }
+    .orders-page {
+        max-width: 1000px;
+        margin: 3rem auto;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background-color: #cdbbe9;
+        border-radius: 10px;
+        border: 1px solid #21123b;
+        box-shadow: 0 14px 16px rgba(22, 26, 255, 0.1);
+    }
+    .orders-header {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 30px;
+        color: #6e3bbb;
+    }
+    .order-card {
+        background-color: #fff;
+        border: 1px solid #d0b4ff;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .order-item {
+        display: flex;
+        align-items: center;
+        background-color: #f9f4ff;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    .order-item img {
+        width: 100px;
+        height: 100px;
+        border-radius: 5px;
+        margin-right: 15px;
+    }
+    .order-details {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .order-status {
+        font-size: 0.9rem;
+        color: #555;
+    }
+    .actions {
+        margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .actions button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: #fff;
+    }
+    .actions button.view { background-color: #4CAF50; }
+    .actions button.cancel { background-color: #a12ecf; }
+    .actions button.return { background-color: #c53f3f; }
+    .actions button.retry { background-color: #ff9800; }
+    .retry {
+    background-color: #ff4d4d; /* Red color for failed payment */
+    color: white; /* White text */
+    border: none;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
 
-        .orders-page {
-            max-width: 1000px;
-            margin: 3rem auto;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background-color: #cdbbe9;
-            border-radius: 10px;
-            border: 1px solid #21123b;
-            box-shadow: 0 14px 16px rgba(22, 26, 255, 0.1);
-        }
+.retry:hover {
+    background-color: #cc0000; /* Darker red on hover */
+}
+</style>
 
-        .orders-header {
-            text-align: center;
-            font-size: 2rem;
-            margin-bottom: 30px;
-            color: #6e3bbb;
-        }
+<div class="orders-page">
+    <h1 class="orders-header">Your Orders</h1>
+    <% if (orders.length > 0) { %>
+        <% orders.forEach(order => { %>
+            <div class="order-card">
+                <div class="order-items">
+                    <% order.orderedItems.forEach(item => { %>
+                        <div class="order-item">
+                            <img src="/img/products/<%= item.product.productImage[0] %>" alt="<%= item.product.productName %>">
+                            <div class="order-details">
+                                <p><strong><%= item.product.productName %></strong></p>
+                                <p class="order-status"><strong>Item Status:</strong> <%= item.status ? item.status : 'Pending' %></p>
+                                <p class="order-status"><strong>Payment Status:</strong> <%= order.overallPaymentStatus ? order.overallPaymentStatus : 'Pending' %></p>
 
-        .order-card {
-            background-color: #fff;
-            border: 1px solid #d0b4ff;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .order-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .order-item {
-            display: flex;
-            align-items: center;
-            background-color: #f9f4ff;
-            border-radius: 10px;
-            padding: 10px;
-            width: 100%;
-        }
-
-        .order-item img {
-            width: 100px;
-            height: 100px;
-            border-radius: 5px;
-            margin-right: 15px;
-        }
-
-        .actions button {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-right: 10px;
-            color: #fff;
-        }
-
-        .actions button.view {
-            background-color: #4CAF50;
-        }
-
-        .actions button.cancel {
-            background-color: #a12ecf;
-        }
-
-        .actions button.retry {
-            background-color: #ff9800;
-        }
-    </style>
-
-    <div class="orders-page">
-        <h1 class="orders-header">Your Orders</h1>
-        <% if (orders.length > 0) { %>
-            <% orders.forEach(order => { %>
-                <div class="order-card">
-                    
-                    <p>Payment Method: <%= order.paymentMethod %></p>
-                    <p>Status: <span class="order-status <%= order.status.toLowerCase().replace(/\s+/g, '-') %>"><%= order.status %></span></p>
-                    <p>Payment Status: <span class="order-status <%= order.paymentStatus.toLowerCase().replace(/\s+/g, '-') %>"><%= order.paymentStatus %></span></p>
-                    <div class="order-items">
-                        <% order.orderedItems.forEach(item => { %>
-                            <div class="order-item">
-                                <img src="/img/products/<%= item.product.productImage[0] %>" alt="<%= item.product.productName %>">
-                                <p><%= item.product.productName %></p>
                             </div>
-                        <% }) %>
-                    </div>
-                    <div class="actions">
-                        <button class="view" onclick="viewOrder('<%= order.orderId %>')">View</button>
-                        <% if (order.status !== 'Delivered' && order.status !== 'Refund Completed'&& order.status !== 'Cancelled') { %>
-                            <button class="cancel" onclick="cancelOrder('<%= order.orderId %>')">Cancel Order</button>
-                        <% } %>
-                        <% if (order.paymentStatus == 'Failed'&& order.status !== 'Cancelled') { %>
-                            <button class="retry" onclick="retryPayment('<%= order.orderId %>', '<%= order.finalAmount %>', '<%= order.razorpayOrderId %>')">Retry Payment</button>
-                        <% } %>
-                        <% if (order.status =='Delivered' ) { %>
-                            <button onclick="returnOrder('<%= order.orderId %>')"
-                                style="background-color: #c53f3f; color: #fff;">Return </button>
-                            <% } %>
-                    </div>
+                            <div class="actions">
+                                <button class="view" onclick="viewOrder('<%= order.orderId %>')">View</button>
+                                <% if (item.status !== 'Delivered' && item.status !== 'Returned' && item.status !== 'Cancelled') { %>
+                                    <button class="cancel" onclick="cancelOrder('<%= order.orderId %>', '<%= item._id %>')">Cancel</button>
+                                <% } %>
+                                <% if (item.status === 'Delivered') { %>
+                                    <button class="return" onclick="returnOrder('<%= order.orderId %>', '<%= item._id %>')">Return</button>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }) %>
                 </div>
-            <% }) %>
-        <% } else { %>
-            <p style="text-align: center; color: #130c1e; margin: 5rem;">No orders found.</p>
-        <% } %>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <% if (order.overallPaymentStatus === 'Failed') { %>
+                    <button class="retry" onclick="retryPayment('<%= order.orderId %>', <%= order.finalAmount %>)">
+                        Retry Payment
+                    </button>
+                <% } %>
+            </div>
+        <% }) %>
+    <% } else { %>
+        <p>No orders found.</p>
+    <% } %>
+</div>
 
-    <script>
-        function viewOrder(orderId) {
-            window.location.href = `/profile/orderDetails/${orderId}`;
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    function viewOrder(orderId) {
+    window.location.href = `/profile/orderDetails/${orderId}`;
+}
+
+function cancelOrder(orderId, itemId) {
+    Swal.fire({
+        title: "Cancel Order",
+        html: `
+            <p>Please select a reason for canceling this product:</p>
+            <select id="cancelReason" class="swal2-input">
+                <option value="">-- Select a reason --</option>
+                <option value="Ordered by mistake">Ordered by mistake</option>
+                <option value="Found a better price">Found a better price</option>
+                <option value="Product no longer needed">Product no longer needed</option>
+                <option value="Delivery is too slow">Delivery is too slow</option>
+                <option value="Other">Other</option>
+            </select>
+            <textarea id="otherReason" class="swal2-textarea" placeholder="Enter reason (if other)" style="display:none;"></textarea>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, cancel it!",
+        preConfirm: () => {
+            const reason = document.getElementById("cancelReason").value;
+            const otherReason = document.getElementById("otherReason").value;
+
+            if (!reason) {
+                Swal.showValidationMessage("⚠ Please select a cancellation reason.");
+                return false;
+            }
+
+            return { reason: reason === "Other" ? otherReason : reason };
         }
-    
-        function cancelOrder(orderId) {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "Do you really want to cancel this order?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#3085d6",
-                confirmButtonText: "Yes, cancel it!"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch('/cancelOrder', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        Swal.fire({
-                            title: "Cancelled",
-                            text: data.message,
-                            icon: "success"
-                        }).then(() => location.reload());
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                        Swal.fire("Error", "An error occurred while canceling the order", "error");
-                    });
-                }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/cancelOrder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId,
+                    itemId,
+                    cancelReason: result.value.reason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.fire("Cancelled", data.message, "success").then(() => location.reload());
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                Swal.fire("Error", "An error occurred while canceling the product", "error");
             });
         }
-    
-        function retryPayment(orderId, finalAmount) {
+    });
+
+    // Show textarea when "Other" is selected
+    document.addEventListener("change", (event) => {
+        if (event.target.id === "cancelReason") {
+            const otherReasonField = document.getElementById("otherReason");
+            otherReasonField.style.display = event.target.value === "Other" ? "block" : "none";
+        }
+    });
+}
+
+
+    function retryPayment(orderId, finalAmount) {
     var razorpayIdKey = '<%= process.env.RAZORPAY_ID_KEY %>';
 
     fetch('/createRetryPaymentOrder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, finalAmount }) // Ensure orderId is sent
+        body: JSON.stringify({ orderId, finalAmount })
     })
     .then(res => res.json())
     .then(data => {
@@ -171,14 +214,14 @@
             amount: Math.round(finalAmount * 100),
             currency: 'INR',
             name: 'CyberCrate',
-            description: 'Retry Order Payment',
+            description: 'Retry Payment',
             order_id: data.razorpayOrderId,
             handler: function (response) {
                 fetch('/retryPayment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        orderId, // Ensure orderId is included
+                        orderId,
                         razorpay_order_id: response.razorpay_order_id,
                         razorpay_payment_id: response.razorpay_payment_id,
                         razorpay_signature: response.razorpay_signature
@@ -190,7 +233,6 @@
                 })
                 .catch(err => {
                     Swal.fire("Error", "Payment verification failed", "error");
-                    console.error("Payment Error:", err);
                 });
             },
             theme: { color: '#3399cc' }
@@ -201,44 +243,59 @@
     });
 }
 
-        function returnOrder(orderId) {
-        Swal.fire({
-            title: "Are you sure?",
-            text: "Do you want to request a return for this order?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, Return it!"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/ReturnOrder/${orderId}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            title: "Return Requested",
-                            text: "Your return request has been successfully placed.",
-                            icon: "success"
-                        }).then(() => location.reload());
-                    } else {
-                        Swal.fire({
-                            title: "Error",
-                            text: data.message,
-                            icon: "error"
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    Swal.fire("Error", "An error occurred while processing the return request", "error");
-                });
+function returnOrder(orderId, itemId) {
+    Swal.fire({
+        title: "Return Order",
+        html: `
+            <p>Please select a reason for returning this product:</p>
+            <select id="returnReason" class="swal2-input">
+                <option value="">-- Select a reason --</option>
+                <option value="Defective product">Defective product</option>
+                <option value="Wrong item received">Wrong item received</option>
+                <option value="Item not as described">Item not as described</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Other">Other</option>
+            </select>
+            <textarea id="otherReason" class="swal2-textarea" placeholder="Enter reason (if other)" style="display:none;"></textarea>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Submit Return",
+        preConfirm: () => {
+            const reason = document.getElementById("returnReason").value;
+            const otherReason = document.getElementById("otherReason").value;
+
+            if (!reason) {
+                Swal.showValidationMessage("⚠ Please select a return reason.");
+                return false;
             }
-        });
-    }
-    </script>
-    
-    <%- include('../layouts/user/footer.ejs') %>
+
+            return { reason: reason === "Other" ? otherReason : reason };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/returnOrder/${orderId}/${itemId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderId,
+                    itemId,
+                    returnReason: result.value.reason
+                })
+            }).then(() => location.reload());
+        }
+    });
+
+    // Show textarea when "Other" is selected
+    document.addEventListener("change", (event) => {
+        if (event.target.id === "returnReason") {
+            const otherReasonField = document.getElementById("otherReason");
+            otherReasonField.style.display = event.target.value === "Other" ? "block" : "none";
+        }
+    });
+}
+</script>
+
+<%- include('../layouts/user/footer.ejs') %>
