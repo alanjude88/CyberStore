@@ -113,7 +113,6 @@ router.get('/checkout', isLogAuth, orderController.getCheckoutPage);
 router.post('/cancelOrder', isLogAuth, orderController.cancelOrder);
 router.post('/verifyPayment', isLogAuth, orderController.verifyPayment);
 router.post("/ReturnOrder/:orderId/:itemId", isLogAuth, orderController.ReturnOrder);
-// router.get('/orderDetails/:id', isLogAuth, orderController.orderDetails);
 router.get('/profile/orderDetails/:id', isLogAuth, orderController.orderDetails);
 router.get('/orders/:id/invoice',isLogAuth, orderController.generateInvoice)
 router.post('/retryPayment',isLogAuth, orderController.retryPayment)

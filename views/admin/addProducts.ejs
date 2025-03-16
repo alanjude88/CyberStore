@@ -404,83 +404,75 @@ body {
 
     <script>
 
-        function validateAndSubmit() {
-            if (validateForm()) {
-                document.forms[0].submit();
-            }
+function validateAndSubmit() {
+        if (validateForm()) {
+            document.forms[0].submit();
+        }
+    }
+
+    function validateForm() {
+        let imageDatas = false;
+        console.log("validate form");
+        clearErrorMessages();
+
+        const name = document.getElementsByName('productName')[0].value;
+        const description = document.getElementsByName('description')[0].value;
+        const brand = document.getElementsByName('brand')[0].value;
+        const price = document.getElementsByName('regularPrice')[0].value;
+        const saleprice = document.getElementsByName('salePrice')[0].value;
+        const category = document.getElementsByName('category')[0].value;
+        const images = document.getElementById('input1');
+        const quantity = document.getElementsByName('quantity')[0].value;  // Fixing this line
+        imageDatas = document.getElementById("imageDatas")?.value;
+
+        let isValid = true;
+
+        if (name.trim() === "") {
+            displayErrorMessage('productName-error', 'Please enter a product name.');
+            isValid = false;
         }
 
-
-
-
-        function validateForm() {
-            let imageDatas = false
-            console.log("validate form");
-            clearErrorMessages();
-            const name = document.getElementsByName('productName')[0].value;
-            const description = document.getElementsByName('descriptionData')[0].value;
-            const brand = document.getElementsByName('brand')[0].value;
-            const price = document.getElementsByName('regularPrice')[0].value;
-            const saleprice = document.getElementsByName('salePrice')[0].value;
-            const category = document.getElementsByName('category')[0].value;
-            const images = document.getElementById('input1')
-            const quantity = document.getElementsByName('quantity')
-            imageDatas = document.getElementById("imageDatas")?.value;
-
-            let isValid = true;
-            if (name.trim() === "") {
-                displayErrorMessage('productName-error', 'Please enter a product name.');
-                isValid = false;
-            }
-
-            if (description === '') {
-                displayErrorMessage('description-error', 'Please enter a product description.');
-                isValid = false;
-            }
-
-
-            if (parseInt(quantity) < 0) {
-                displayErrorMessage('quantity-error', 'Please enter a valid non-negative quantity.');
-                isValid = false;
-            }
-
-
-            if (!/^\d+(\.\d{1,2})?$/.test(price) || parseFloat(price) < 0) {
-                displayErrorMessage('regularPrice-error', 'Please enter a valid non-negative price.');
-                isValid = false;
-            }
-            if (!/^\d+(\.\d{1,2})?$/.test(saleprice) || parseFloat(saleprice) < 0) {
-                displayErrorMessage('salePrice-error', 'Please enter a valid non-negative price.');
-                isValid = false;
-            }
-
-            if (color.trim() === "") {
-                displayErrorMessage('color-error', 'Please enter a color.');
-                isValid = false;
-            }
-            if (!imageDatas && images.files.length === 0) {
-                displayErrorMessage("images-error", 'Please select an image.');
-                isValid = false;
-            }
-            return isValid;
+        if (description.trim() === "") {
+            displayErrorMessage('description-error', 'Please enter a product description.');
+            isValid = false;
         }
 
-        function displayErrorMessage(elementId, message) {
-            var errorElement = document.getElementById(elementId);
-            errorElement.innerText = message;
-            errorElement.style.display = "block";
+        if (quantity.trim() === "" || parseInt(quantity) <= 0) {  // Updated condition
+            displayErrorMessage('quantity-error', 'Please enter a valid quantity greater than zero.');
+            isValid = false;
         }
 
-
-        function clearErrorMessages() {
-            const errorElements = document.getElementsByClassName('error-message');
-            Array.from(errorElements).forEach(element => {
-                element.innerText = '';
-            });
-            const errorMessage = document.getElementById('errorMessage');
-
-
+        if (!/^\d+(\.\d{1,2})?$/.test(price) || parseFloat(price) <= 0) {  // Ensuring price is positive
+            displayErrorMessage('regularPrice-error', 'Please enter a valid positive price.');
+            isValid = false;
         }
+
+        if (saleprice && (!/^\d+(\.\d{1,2})?$/.test(saleprice) || parseFloat(saleprice) < 0)) {  
+            displayErrorMessage('salePrice-error', 'Please enter a valid non-negative sale price.');
+            isValid = false;
+        }
+
+        if (!imageDatas && images.files.length === 0) {  // Check if any image is selected
+            displayErrorMessage("images-error", 'Please select at least one image.');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    function displayErrorMessage(elementId, message) {
+        var errorElement = document.getElementById(elementId);
+        errorElement.innerText = message;
+        errorElement.style.display = "block";
+    }
+
+    function clearErrorMessages() {
+        const errorElements = document.getElementsByClassName('error-message');
+        Array.from(errorElements).forEach(element => {
+            element.innerText = '';
+        });
+    }
+
 
 
 
