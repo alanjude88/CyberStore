@@ -283,7 +283,8 @@ const loadAddresses = async (req, res) => {
 
 const loadAddAddress = async (req, res) => {
     try {
-        res.render('users/addAddress');
+        const returnTo = req.query.returnTo || null;  // Capture returnTo from query params
+        res.render('users/addAddress', { returnTo });  // Pass it to the view
     } catch (error) {
         console.error('Error loading add address page:', error);
         res.redirect('/404-error');
@@ -303,12 +304,11 @@ const addAddress = async (req, res) => {
         await addressData.save();
 
         await User.findByIdAndUpdate(userId, {
-            $push: {
-                addresses: addressData._id
-            }
+            $push: { addresses: addressData._id }
         });
 
-        res.redirect('/profile/addresses');
+        const returnTo = req.query.returnTo || '/profile/addresses';
+        res.redirect(returnTo);  // Redirects to /checkout if provided, else to /profile/addresses
     } catch (error) {
         console.error('Error adding address:', error);
         res.redirect('/404-error');
