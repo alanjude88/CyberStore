@@ -3,10 +3,12 @@ const googleMethod = require('passport-google-oauth20').Strategy;
 const User = require('../Models/userModel');
 const env = require('dotenv').config();
 
+
+const callbackURL=process.env.NODE_ENV==="production"? "http://www.cyberstore.space/auth/google/callback" : "http://localhost:4000/auth/google/callback"
 passport.use(new googleMethod({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:4000/auth/google/callback'
+    callbackURL: callbackURL
 },
 async (accessToken, refreshToken, profile, done) => {
     try {

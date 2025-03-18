@@ -55,7 +55,11 @@ router.get('/auth/google/callback',
     (req, res) => {
         // Set user session after successfull authenticate
         req.session.user = req.user;
-        res.redirect('/');
+        if(process.env.NODE_ENV==="production"){
+            res.redirect("http://www.cyberstore.space/")
+        }else{
+            res.redirect("http://localhost:4000/")
+        }
     }
 );
 
