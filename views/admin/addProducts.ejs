@@ -11,7 +11,7 @@
     /* Base styles */
 body {
     font-family: Arial, sans-serif;
-    background-color: #181818;
+    background-color: #ffffff;
     color: #f5f5f5;
     margin: 0;
     padding: 0;
@@ -30,7 +30,7 @@ body {
 
 /* Card styles */
 .card {
-    background-color: #242424;
+    background-color: #696969;
     border: none;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -309,12 +309,9 @@ body {
                                     <div class="mb-4"> <label class="form-label">Add Offer</label> <input
                                             placeholder="%" name="productOffer" type="number"
                                             class="form-control border" min="0" max="100"> </div>
+                                            <div id="productOffer-error" class="error-message" style="color: red;"></div>
                                 </div>
-                                <div class="col-lg-6">
-                                    <div class="mb-4"> <label class="form-label">Delete Offer</label> <button
-                                            type="button" class="btn btn-secondary form-control"
-                                            onclick="deleteOffer()">Delete Offer</button> </div>
-                                </div>
+                                
                             </div>
 
                             <div class="card mb-4">
@@ -422,7 +419,8 @@ function validateAndSubmit() {
         const saleprice = document.getElementsByName('salePrice')[0].value;
         const category = document.getElementsByName('category')[0].value;
         const images = document.getElementById('input1');
-        const quantity = document.getElementsByName('quantity')[0].value;  // Fixing this line
+        const quantity = document.getElementsByName('quantity')[0].value; 
+        const productOffer = document.getElementsByName('productOffer')[0].value;
         imageDatas = document.getElementById("imageDatas")?.value;
 
         let isValid = true;
@@ -437,12 +435,12 @@ function validateAndSubmit() {
             isValid = false;
         }
 
-        if (quantity.trim() === "" || parseInt(quantity) <= 0) {  // Updated condition
+        if (quantity.trim() === "" || parseInt(quantity) <= 0) {  
             displayErrorMessage('quantity-error', 'Please enter a valid quantity greater than zero.');
             isValid = false;
         }
 
-        if (!/^\d+(\.\d{1,2})?$/.test(price) || parseFloat(price) <= 0) {  // Ensuring price is positive
+        if (!/^\d+(\.\d{1,2})?$/.test(price) || parseFloat(price) <= 0) {
             displayErrorMessage('regularPrice-error', 'Please enter a valid positive price.');
             isValid = false;
         }
@@ -452,10 +450,14 @@ function validateAndSubmit() {
             isValid = false;
         }
 
-        if (!imageDatas && images.files.length === 0) {  // Check if any image is selected
+        if (!imageDatas && images.files.length === 0) { 
             displayErrorMessage("images-error", 'Please select at least one image.');
             isValid = false;
         }
+        if (productOffer !== '' && (parseInt(productOffer) < 0 || parseInt(productOffer) > 100)) {  
+        displayErrorMessage('productOffer-error', 'Please enter a valid offer percentage between 0 and 100.');
+        isValid = false;
+    }
 
         return isValid;
     }
@@ -494,15 +496,15 @@ function validateAndSubmit() {
 
         let reader = new FileReader();
         reader.onload = function () {
-            previewImage.src = reader.result; // Show selected image preview
-            cropImage.src = reader.result; // Show the same image for cropping
+            previewImage.src = reader.result; 
+            cropImage.src = reader.result; 
 
-            // Show the cropping container
+           
             cropperContainer.style.display = 'flex';
 
-            // Initialize Cropper.js on cropped image
+          
             croppers[index] = new Cropper(cropImage, {
-                aspectRatio: 1, // Adjust as needed
+                aspectRatio: 1, 
                 viewMode: 1,
                 guides: true,
                 background: false,

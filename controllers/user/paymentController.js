@@ -8,7 +8,7 @@ const dotenv = require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-
+const StatusCodes = require('../../util/statusCodes');
 // Razorpay instance
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_ID_KEY,
@@ -68,7 +68,7 @@ const placeOrderWallet = async (req, res) => {
 
         const wallet = await Wallet.findOne({ userId });
         if (!wallet || wallet.balance < totalAmount) {
-            return res.status(400).json({ success: false, message: "Insufficient Balance in Your Wallet" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Insufficient Balance in Your Wallet" });
         }
 
         const userAddress = await Address.findOne({
@@ -77,13 +77,13 @@ const placeOrderWallet = async (req, res) => {
         }, { "address.$": 1 });
 
         if (!userAddress) {
-            return res.status(400).json({ success: false, message: "Invalid address selected" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid address selected" });
         }
 
         const addressDetails = userAddress.address[0];
         const cart = await Cart.findOne({ userId }).populate("items.productId");
         if (!cart || cart.items.length === 0) {
-            return res.status(400).json({ success: false, message: "Cart is empty" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Cart is empty" });
         }
 
         const orderItems = cart.items.map((item) => ({
@@ -119,7 +119,7 @@ const placeOrderWallet = async (req, res) => {
 
         return res.json({ success: true, orderId: order._id });
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Failed to place the order", error: error.message });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to place the order", error: error.message });
     }
 };
 

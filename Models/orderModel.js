@@ -19,7 +19,7 @@ const orderSchema = new Schema({
             enum: ['Pending', 'Completed', 'Refunded'],
             default: 'Pending'
         },
-        deliveredDate: { type: Date, default: null } // ✅ Added delivery date for each item
+        deliveredDate: { type: Date, default: null } 
     }],
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     address: {
@@ -40,7 +40,7 @@ const orderSchema = new Schema({
     couponDiscount: { type: Number, default: 0 }, 
     deliveryCharge: { type: Number },
     invoiceDate: { type: Date },
-    deliveredDate: { type: Date, default: null }, // ✅ Kept the order-level delivered date
+    deliveredDate: { type: Date, default: null }, 
     overallStatus: {  
         type: String,
         enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],

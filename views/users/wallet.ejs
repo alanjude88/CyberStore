@@ -134,6 +134,13 @@
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    .pagination {
+    display: flex;           
+    justify-content: center;  
+    align-items: center;      
+    margin-top: 20px;         
+}
+
 </style>
 
 <div class="wallet-page">
@@ -174,14 +181,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% wallet.walletHistory.reverse().forEach(transaction => { %>
+                            <% transactions.forEach(transaction => { %>
                                 <tr class="border-t border-purple-300">
                                     <td class="border border-purple-300 px-4 py-2">
                                         <%= new Date(transaction.date).toLocaleDateString() %>
                                     </td>
                                     <td class="border border-purple-300 px-4 py-2">
-                                        <span
-                                            class="<%= transaction.transactionType === 'credit' ? 'text-green-600' : 'text-red-600' %>">
+                                        <span class="<%= transaction.transactionType === 'credit' ? 'text-green-600' : 'text-red-600' %>">
                                             <%= transaction.transactionType.toUpperCase() %>
                                         </span>
                                     </td>
@@ -189,20 +195,63 @@
                                         <%= transaction.description %>
                                     </td>
                                     <td class="border border-purple-300 px-4 py-2 text-right">
-                                        <span
-                                            class="<%= transaction.transactionType === 'credit' ? 'text-green-600' : 'text-red-600' %>">
+                                        <span class="<%= transaction.transactionType === 'credit' ? 'text-green-600' : 'text-red-600' %>">
                                             <%= transaction.transactionType === 'credit' ? '+' : '-' %>₹<%= transaction.amount.toFixed(2) %>
                                         </span>
                                     </td>
                                 </tr>
                             <% }) %>
                         </tbody>
+                        
                     </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<!-- Pagination Controls -->
+<div class="pagination mt-4 flex justify-center">
+    <% if (currentPage > 1) { %>
+        <a href="?page=<%= currentPage - 1 %>" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition mx-1">&laquo; Previous</a>
+    <% } %>
+
+    <% 
+        const maxPagesToShow = 5; 
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+    %>
+
+    <% if (startPage > 1) { %>
+        <a href="?page=1" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition mx-1">1</a>
+        <% if (startPage > 2) { %>
+            <span class="text-gray-600 px-2">...</span>
+        <% } %>
+    <% } %>
+
+    <% for (let i = startPage; i <= endPage; i++) { %>
+        <a href="?page=<%= i %>" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition mx-1 <%= currentPage === i ? 'bg-purple-700' : '' %>">
+            <%= i %>
+        </a>
+    <% } %>
+
+    <% if (endPage < totalPages) { %>
+        <% if (endPage < totalPages - 1) { %>
+            <span class="text-gray-600 px-2">...</span>
+        <% } %>
+        <a href="?page=<%= totalPages %>" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition mx-1"><%= totalPages %></a>
+    <% } %>
+
+    <% if (currentPage < totalPages) { %>
+        <a href="?page=<%= currentPage + 1 %>" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition mx-1">Next &raquo;</a>
+    <% } %>
+</div>
+
+
+
 
 <script>
     document.getElementById('addMoneyForm').addEventListener('submit', async (e) => {

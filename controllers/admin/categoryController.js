@@ -3,6 +3,7 @@ const Product = require('../../Models/productModel');
 const user = require('../../Models/userModel');
 const order = require('../../Models/orderModel');
 const banner = require('../../Models/bannerModel');
+const StatusCodes = require('../../util/statusCodes');
 
 const loadCategories = async (req, res) => {
     try {
@@ -37,14 +38,14 @@ const addNewCategories = async (req, res) => {
     let { name, description, categoryOffer } = req.body;
 
     try {
-        // Trim and convert name to lowercase for uniformity
+        
         name = name.trim();
 
-        // Case-insensitive check for existing category
+       
         const categoryExist = await category.findOne({ name: { $regex: `^${name}$`, $options: 'i' } });
 
         if (categoryExist) {
-            return res.status(400).json({ error: 'Category Already Exists' });
+            return res.status(StatusCodes.BAD_REQUEST).json({ error: 'Category Already Exists' });
         }
 
         const newCategory = new category({
@@ -58,15 +59,15 @@ const addNewCategories = async (req, res) => {
         res.status(201).json({ message: 'Category added successfully!' });
     } catch (error) {
         console.error('Error while adding new category:', error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' });
     }
 };
 
 const editCategory = async(req,res)=>{
     try {
         
-    const id=req.query.id;
-    const categoryData=await category.findOne({_id:id})
+    const categoryId=req.query.id;
+    const categoryData=await category.findOne({_id:categoryId})
     res.render('admin/editCategory',{category:categoryData});    
 
     } catch (error) {
@@ -80,35 +81,35 @@ const editCategory = async(req,res)=>{
 
 const updateCategory = async (req, res) => {
     try {
-        const id = req.body.categoryId;
+        const categoryId = req.body.categoryId;
         let { name, description, categoryOffer } = req.body;
 
-        // Trim input name to remove spaces and ensure uniformity
+   
         name = name.trim();
-
-        // Check for an existing category with the same name (case-insensitive) excluding the current category
+       
+       
         const existingCategory = await category.findOne({
-            name: { $regex: `^${name}$`, $options: 'i' }, // Case-insensitive regex search
-            _id: { $ne: id } // Exclude the current category
+            name: { $regex: `^${name}$`, $options: 'i' }, 
+            _id: { $ne: categoryId } 
         });
 
         if (existingCategory) {
             return res.status(400).json({ error: 'Category Already Exists, write another One' });
         }
 
-        // Update the category
-        const updatedCategory = await category.findByIdAndUpdate(id, {
+        
+        const updatedCategory = await category.findByIdAndUpdate(categoryId, {
             name,
             description,
             categoryOffer: categoryOffer || 0
         }, { new: true });
 
         if (!updatedCategory) {
-            return res.status(404).json({ error: 'Category Not Found' });
+            return res.status(StatusCodes.NOT_FOUND).json({ error: 'Category Not Found' });
         }
 
-        // Update product sale prices based on category and product offers
-        const products = await Product.find({ category: id });
+        
+        const products = await Product.find({ category: categoryId });
         for (let product of products) {
             const categoryOfferValue = parseFloat(categoryOffer) || 0;
             const productOfferValue = parseFloat(product.productOffer) || 0;
@@ -124,7 +125,7 @@ const updateCategory = async (req, res) => {
         return res.json({ message: 'Category Updated Successfully' });
     } catch (error) {
         console.log('Error while updating category', error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -132,18 +133,18 @@ const updateCategory = async (req, res) => {
 
 const listCategories = async (req, res) => {
     try {
-        const { id } = req.query;
+        const { categoryId } = req.query;
 
-        if (!id) {
-            return res.status(400).json({ error: "Category ID is required" });
+        if (!categoryId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category ID is required" });
         }
 
-        const existingCategory = await category.findById(id);
+        const existingCategory = await category.findById(categoryId);
         if (!existingCategory) {
-            return res.status(404).json({ error: "Category not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ error: "Category not found" });
         }
 
-        await category.updateOne({ _id: id }, { $set: { isListed: false } });
+        await category.updateOne({ _id: categoryId }, { $set: { isListed: false } });
 
         return res.redirect('/admin/categories');
     } catch (error) {
@@ -154,18 +155,18 @@ const listCategories = async (req, res) => {
 
 const unListCategories = async (req, res) => {
     try {
-        const { id } = req.query;
+        const { categoryId } = req.query;
 
-        if (!id) {
-            return res.status(400).json({ error: "Category ID is required" });
+        if (!categoryId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category ID is required" });
         }
 
-        const existingCategory = await category.findById(id);
+        const existingCategory = await category.findById(categoryId);
         if (!existingCategory) {
-            return res.status(404).json({ error: "Category not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ error: "Category not found" });
         }
 
-        await category.updateOne({ _id: id }, { $set: { isListed: true } });
+        await category.updateOne({ _id: categoryId }, { $set: { isListed: true } });
 
         return res.redirect('/admin/categories');
     } catch (error) {

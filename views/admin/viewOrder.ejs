@@ -122,29 +122,29 @@
             <div class="product-cards">
                 <% order.orderedItems.forEach(item => { %>
                     <div class="product-card">
-                        <% if (Array.isArray(item.product.productImage)) { %>
-                            <img src="/img/products/<%= item.product.productImage[0] %>" alt="<%= item.product.productName %>">
+                        <% if (Array.isArray(item.productImage)) { %>
+                            <img src="/img/products/<%= item.productImage[0] %>" alt="<%= item.productName %>">
                         <% } else { %>
-                            <img src="/img/products/<%= item.product.productImage %>" alt="<%= item.product.productName %>">
+                            <img src="/img/products/<%= item.productImage %>" alt="<%= item.productName %>">
                         <% } %>
-                        <h3><%= item.product.productName %></h3>
-                        <p class="price">Price: ₹<%= parseInt(item.price) %></p>
+                        <h3><%= item.productName %></h3>
+                        <p class="price">Price: ₹<%= parseInt(item.priceAtPurchase) %></p>
                         <p class="quantity">Quantity: <%= item.quantity %></p>
-                        <p class="total-summary">Total: ₹<%= parseInt(item.quantity * item.price) %></p>
+                        <p class="total-summary">Total: ₹<%= parseInt(item.quantity * item.priceAtPurchase) %></p>
                     </div>
                 <% }) %>
             </div>
         </div>
-
+        
         <!-- Payment Summary -->
         <div class="payment-summary">
             <h2>Payment Summary</h2>
-            <p><strong>Subtotal:</strong> ₹<%= parseInt(order.subTotal) %></p>
             <p><strong>Discount:</strong> ₹<%= order.discount %></p>
             <p><strong>Delivery Charge:</strong> ₹<%= order.deliveryCharge || 0 %></p>
             <p><strong>Coupon Discount:</strong> ₹<%= order.couponDiscount || 0 %></p>
             <p><strong>Total Amount:</strong> ₹<%= parseInt(order.finalAmount) %></p>
         </div>
+        
     </div>
 </div>
 

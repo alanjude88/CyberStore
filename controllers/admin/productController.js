@@ -3,6 +3,7 @@ const Category = require("../../Models/categoryModel");
 const Brand = require("../../Models/brandModel");
 const User = require("../../Models/userModel");
 const Cart = require("../../Models/cartModel");
+const StatusCodes = require('../../util/statusCodes');
 
 const fs = require("fs");
 const path = require("path");
@@ -108,7 +109,7 @@ const addNewProduct = async (req, res) => {
 
       const productExist = await Product.findOne({ productName });
       if (productExist) {
-          return res.status(400).json({ error: "Product already exists, try another one" });
+          return res.status(StatusCodes.BAD_REQUEST).json({ error: "Product already exists, try another one" });
       }
 
       const images = [];
@@ -123,12 +124,12 @@ const addNewProduct = async (req, res) => {
 
       const category = await Category.findOne({ name: categoryName });
       if (!category) {
-          return res.status(404).json({ error: "Category not found" });
+          return res.status(StatusCodes.NOT_FOUND).json({ error: "Category not found" });
       }
 
       const brand = await Brand.findOne({ brandName });
       if (!brand) {
-          return res.status(404).json({ error: "Brand not found" });
+          return res.status(StatusCodes.NOT_FOUND).json({ error: "Brand not found" });
       }
 
       const productOfferValue = parseInt(productOffer) || 0;
@@ -158,7 +159,7 @@ const addNewProduct = async (req, res) => {
       if (savedProduct) {
           res.redirect("/admin/products");
       } else {
-          res.status(500).json({ error: "Failed to save product" });
+          res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Failed to save product" });
       }
 
   } catch (error) {
@@ -175,25 +176,25 @@ const editProduct = async (req, res) => {
 
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ error: 'Product not found' });
     }
 
-    // Check for duplicate product name
+    
     const existingProduct = await Product.findOne({
       productName: productData.productName,
       _id: { $ne: productId },
     });
     if (existingProduct) {
-      return res.status(400).json({ error: 'Product already exists' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: 'Product already exists' });
     }
 
-    // Check if brand exists
+    
     const brand = await Brand.findOne({ brandName: productData.brand });
     if (!brand) {
-      return res.status(404).json({ error: 'Brand not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ error: 'Brand not found' });
     }
 
-    let images = product.productImage || []; // Keep existing images
+    let images = product.productImage || [];
 
     if (req.files && req.files.length > 0) {
       const newImages = [];
@@ -209,16 +210,16 @@ const editProduct = async (req, res) => {
         newImages.push(req.files[i].filename);
       }
 
-      images = [...images, ...newImages]; // Append new images to existing images
+      images = [...images, ...newImages]; 
 
-      // **Limit total images to 4**
+      
       if (images.length > 4) {
         const excessCount = images.length - 4;
-        images = images.slice(excessCount); // Remove the oldest images
+        images = images.slice(excessCount);
       }
     }
 
-    // Calculate pricing logic
+   
     const category = await Category.findOne({ _id: productData.category });
     const categoryOfferValue = category ? parseInt(category.categoryOffer) : 0;
     const productOfferValue = parseInt(productData.productOffer) || 0;
@@ -239,7 +240,7 @@ const editProduct = async (req, res) => {
       isOfferActive: highestOffer > 0,
       offerStartDate: highestOffer > 0 ? new Date() : null,
       offerEndDate: null,
-      productImage: images, // Updated image array with old + new images (max 4)
+      productImage: images, 
     };
 
     await Product.findByIdAndUpdate(productId, { $set: updateFields }, { new: true });
@@ -262,15 +263,15 @@ const blockProduct = async(req,res)=>{
     
     const productId = req.params.id;
 
-    // await Product.updateOne({_id:productId},{$set:{isBlocked:true}})
+    
     await Product.findByIdAndUpdate(productId, { isBlocked: true });
-    // await Cart.updateMany({}, { $pull: { items: { productId: productId } } });
+    
 
-    res.status(200).send({ message: 'Product blocked successfully' });
+    res.status(StatusCodes.SUCCESS).send({ message: 'Product blocked successfully' });
   } catch (error) {
     
     console.log('error while blocking product',error);
-    res.status(500).send('Error while blocking product');
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send('Error while blocking product');
   }
 
 }
@@ -281,10 +282,10 @@ const unBlockProduct = async(req,res)=>{
     
     const productId = req.params.id;
     await Product.updateOne({_id:productId},{$set:{isBlocked:false}})
-    res.status(200).send({ message: 'Product unblocked successfully' });
+    res.status(StatusCodes.SUCCESS).send({ message: 'Product unblocked successfully' });
   } catch (error) {
     console.log('error while unblocking product',error);
-    res.status(500).send('Error while unblocking product');
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send('Error while unblocking product');
   }
 
 }
@@ -326,10 +327,10 @@ const deleteSingleImage = async (req, res) => {
       return res.status(400).json({ status: false, message: 'Invalid request data' });
     }
 
-    // Define image path
+    
     const imagePath = path.join(__dirname, '../public/img/products', imageName);
 
-    // Check if file exists before deleting
+    
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
       console.log(`Image ${imageName} deleted from filesystem.`);
@@ -337,7 +338,7 @@ const deleteSingleImage = async (req, res) => {
       console.log(`Image ${imageName} not found on the server.`);
     }
 
-    // Update database: Remove image from productImage array
+   
     const updatedProduct = await Product.findByIdAndUpdate(
       productId,
       { $pull: { productImage: imageName } },
@@ -345,14 +346,14 @@ const deleteSingleImage = async (req, res) => {
     );
 
     if (!updatedProduct) {
-      return res.status(404).json({ status: false, message: 'Product not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ status: false, message: 'Product not found' });
     }
 
     console.log(`Image ${imageName} removed from database.`);
     res.json({ status: true, message: 'Image deleted successfully' });
   } catch (error) {
     console.error('Error while deleting image:', error);
-    res.status(500).json({ status: false, message: 'Internal server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ status: false, message: 'Internal server error' });
   }
 };
 
@@ -418,12 +419,12 @@ const deleteOffer=async(req,res)=>{
       await product.save();
       res.redirect(`/admin/editProduct/'${productId}`);
     }else{
-      res.status(404).send('Product not found');
+      res.status(StatusCodes.NOT_FOUND).send('Product not found');
     }
 
   } catch (error) {
     console.log('error while deleting offer',error);
-    res.status(500).send('Error while deleting offer');
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send('Error while deleting offer');
   }
 }
 

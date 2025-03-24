@@ -112,8 +112,8 @@ router.get(
 router.get('/coupons',isAdminAuthenticated, couponController.loadCoupons);
 router.get('/coupons/add',isAdminAuthenticated,couponController.loadAddCoupon);
 router.post('/coupons',isAdminAuthenticated,couponController.createCoupon);
-router.get('/coupons/edit/:id',isAdminAuthenticated,couponController.loadUpdateCoupon);
-router.post('/coupons/edit/:id',isAdminAuthenticated,couponController.updateCoupon);
+router.get('/coupons/edit/:couponID',isAdminAuthenticated,couponController.loadUpdateCoupon);
+router.post('/coupons/edit/:couponID',isAdminAuthenticated,couponController.updateCoupon);
 router.get('/deleteCoupon',isAdminAuthenticated,couponController.deleteCoupon);
 
 //salesManagement routes

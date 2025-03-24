@@ -9,6 +9,7 @@ const bcrypt = require("bcrypt");
 const { create } = require("connect-mongo");
 const exceljs = require("exceljs");
 const PDFDocument = require("pdfkit");
+const StatusCodes = require('../../util/statusCodes');
 
 const pageError = async (req, res) => {
     console.log("Rendering admin error page");
@@ -37,7 +38,7 @@ const pageError = async (req, res) => {
     } catch (error) {
       console.error("Error loading admin login:", error);
       res
-        .status(500)
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .render("admin/adminLogin", { error: "Internal server error" });
     }
   };
@@ -59,7 +60,7 @@ const pageError = async (req, res) => {
     } catch (error) {
       console.error("Error in admin login:", error);
       res
-        .status(500)
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .render("admin/adminLogin", { error: "Internal server error" });
     }
   };
@@ -122,20 +123,20 @@ const pageError = async (req, res) => {
       const deliveredOrdersRevenue = await Order.aggregate([
         {
           $match: {
-            "orderedItems.status": "Delivered", // At least one delivered item
-            createdAt: { $gte: dayStart, $lte: dayEnd } // Apply the date filter
+            "orderedItems.status": "Delivered", 
+            createdAt: { $gte: dayStart, $lte: dayEnd } 
           }
         },
         {
           $group: {
-            _id: "$_id", // Group by order ID
-            finalAmount: { $first: "$finalAmount" } // Take the finalAmount for each order
+            _id: "$_id", 
+            finalAmount: { $first: "$finalAmount" } 
           }
         },
         {
           $group: {
             _id: null,
-            totalRevenue: { $sum: "$finalAmount" } // Sum up the final amounts
+            totalRevenue: { $sum: "$finalAmount" } 
           }
         }
       ]);
@@ -162,7 +163,7 @@ const pageError = async (req, res) => {
         {
             $group: {
                 _id: "$orderedItems.product",
-                productName: { $first: "$productDetails.productName" }, // Fix field name
+                productName: { $first: "$productDetails.productName" }, 
                 productImage: { $first: { $ifNull: ["$productDetails.productImage", ["default.jpg"]] } },
                 totalQuantity: { $sum: "$orderedItems.quantity" },
                 totalRevenue: {
@@ -212,7 +213,7 @@ const pageError = async (req, res) => {
             brandName: { $first: "$brandDetails.brandName" },
             totalSales: { $sum: { $multiply: ["$orderedItems.quantity", "$orderedItems.priceAtPurchase"] } },
             totalQuantity: { $sum: "$orderedItems.quantity" },
-            totalOrders: { $addToSet: "$_id" }, // Collect unique order IDs
+            totalOrders: { $addToSet: "$_id" },
           },
         },
         {
@@ -269,7 +270,7 @@ const pageError = async (req, res) => {
                 _id: "$category._id",
                 categoryName: { $first: "$category.name" },
                 totalOrders: { $sum: 1 },
-                totalQuantitySold: { $sum: "$orderedItems.quantity" }, // No need for $toDouble if stored as Number
+                totalQuantitySold: { $sum: "$orderedItems.quantity" },
                 totalRevenue: {
                     $sum: {
                         $multiply: ["$orderedItems.quantity", "$orderedItems.priceAtPurchase"]
@@ -307,22 +308,22 @@ const pageError = async (req, res) => {
       });
   
       const activeOrders = await Order.countDocuments({
-        "orderedItems.status": { $in: ["Pending", "Processing"] }, // Check at item level
-        createdAt: { $gte: dayStart, $lte: dayEnd }, // Date filter
+        "orderedItems.status": { $in: ["Pending", "Processing"] }, 
+        createdAt: { $gte: dayStart, $lte: dayEnd }, 
       });
   
       const cancelledItemsResult = await Order.aggregate([
-        { $unwind: "$orderedItems" }, // Break orders into individual items
+        { $unwind: "$orderedItems" }, 
         {
           $match: {
-            "orderedItems.status": "Cancelled", // Filter only cancelled items
-            createdAt: { $gte: dayStart, $lte: dayEnd }, // Filter by date range
+            "orderedItems.status": "Cancelled", 
+            createdAt: { $gte: dayStart, $lte: dayEnd }, 
           },
         },
         {
           $group: {
             _id: null,
-            totalCancelledItems: { $sum: "$orderedItems.quantity" }, // Sum cancelled item quantities
+            totalCancelledItems: { $sum: "$orderedItems.quantity" }, s
           },
         },
       ]);
@@ -345,7 +346,7 @@ const pageError = async (req, res) => {
                             input: "$orderedItems", 
                             as: "item", 
                             in: { 
-                                $in: ["$$item.status", ["Delivered"]]  // Allow both "Delivered" and "Returned"
+                                $in: ["$$item.status", ["Delivered"]]  
                             } 
                         }
                     }
@@ -353,7 +354,7 @@ const pageError = async (req, res) => {
             }
         },
         {
-            $match: { allCompleted: true }  // Only orders where all items are Delivered or Returned
+            $match: { allCompleted: true }  
         },
         {
             $count: "completedOrders"
@@ -364,17 +365,17 @@ const pageError = async (req, res) => {
     
   
       const returnedItemsResult = await Order.aggregate([
-        { $unwind: "$orderedItems" }, // Break orders into individual items
+        { $unwind: "$orderedItems" }, 
         {
           $match: {
-            "orderedItems.status": "Returned", // Filter only returned items
-            createdAt: { $gte: dayStart, $lte: dayEnd }, // Filter by date range
+            "orderedItems.status": "Returned", 
+            createdAt: { $gte: dayStart, $lte: dayEnd }, 
           },
         },
         {
           $group: {
             _id: null,
-            totalReturnedItems: { $sum: "$orderedItems.quantity" }, // Sum returned item quantities
+            totalReturnedItems: { $sum: "$orderedItems.quantity" }, 
           },
         },
       ]);
@@ -387,19 +388,19 @@ const pageError = async (req, res) => {
         {
             $match: {
                 createdAt: { $gte: dayStart, $lte: dayEnd },
-                "orderedItems.status": "Delivered" // Ensure at least one delivered item exists
+                "orderedItems.status": "Delivered" 
             }
         },
         {
             $group: {
-                _id: "$_id", // Group by Order ID
-                finalAmount: { $first: "$finalAmount" } // Keep finalAmount per order
+                _id: "$_id", 
+                finalAmount: { $first: "$finalAmount" } 
             }
         },
         {
             $group: {
                 _id: null,
-                totalRevenue: { $sum: "$finalAmount" } // Sum up all finalAmounts
+                totalRevenue: { $sum: "$finalAmount" } 
             }
         }
     ]);
@@ -479,9 +480,9 @@ const pageError = async (req, res) => {
         topProducts,
         topBrands,
         topCategories,
-        filterValue, // Inject into EJS
-        startDate,   // Inject into EJS
-        endDate,     // Inject into EJS
+        filterValue, 
+        startDate,   
+        endDate,     
         selectedFilter: filterValue || "all",
       });
   
@@ -564,7 +565,7 @@ const pageError = async (req, res) => {
           {
             $match: {
                 createdAt: { $gte: dayStart, $lte: dayEnd },
-                "orderedItems.status": "Delivered", // Only include orders with at least one delivered item
+                "orderedItems.status": "Delivered", 
             },
         },
         {
@@ -659,13 +660,13 @@ const pageError = async (req, res) => {
             totalRevenueForSales,
             topBrands,
             topCategories,
-            filterValue, // Inject into EJS
-            startDate,   // Inject into EJS
-            endDate,     // Inject into EJS
+            filterValue, 
+            startDate,   
+            endDate,     
         });
     } catch (error) {
         console.error("Error in filteredAdminDashboard:", error);
-        res.status(500).json({ error: "Failed to fetch filtered dashboard data", details: error.message });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Failed to fetch filtered dashboard data", details: error.message });
     }
 };
   
@@ -675,27 +676,28 @@ const pageError = async (req, res) => {
   // Function to load the sales page
   const loadSalesPage = async (req, res) => {
     try {
-        // Get all orders where at least one item is delivered
+      const { startDate, endDate } = req.query;
+     
         const deliveredOrders = await Order.find({
             "orderedItems.status": "Delivered"
-        }).populate("user", "name"); // Populate user name
+        }).populate("user", "name"); 
 
-        // Calculate total revenue from delivered orders
+      
         const totalRevenueResult = await Order.aggregate([
             { $unwind: "$orderedItems" },
-            { $match: { "orderedItems.status": "Delivered" } }, // Filter delivered items
+            { $match: { "orderedItems.status": "Delivered" } }, 
             {
                 $group: {
                     _id: null,
-                    totalRevenue: { $sum: "$finalAmount" }, // Sum final amount of delivered orders
+                    totalRevenue: { $sum: "$finalAmount" }, 
                 },
             },
         ]);
 
-        // Calculate total discount from delivered items
+        
         const totalDiscountResult = await Order.aggregate([
             { $unwind: "$orderedItems" },
-            { $match: { "orderedItems.status": "Delivered" } }, // Only delivered items
+            { $match: { "orderedItems.status": "Delivered" } }, 
             {
                 $group: {
                     _id: null,
@@ -704,9 +706,9 @@ const pageError = async (req, res) => {
             },
         ]);
 
-        // Calculate coupon discounts applied
+        
         const couponDiscountResult = await Order.aggregate([
-            { $match: { "orderedItems.status": "Delivered" } }, // Only delivered orders
+            { $match: { "orderedItems.status": "Delivered" } }, 
             {
                 $group: {
                     _id: null,
@@ -715,34 +717,36 @@ const pageError = async (req, res) => {
             },
         ]);
 
-        // Count different order statuses
+        
         const totalOrders = deliveredOrders.length;
         const activeOrders = await Order.countDocuments({ status: { $in: ["Pending", "Processing"] } });
         const cancelledOrders = await Order.countDocuments({ status: "Cancelled" });
         const completedOrders = await Order.countDocuments({ status: "Delivered" });
         const returnedOrders = await Order.countDocuments({ status: "Returned" });
 
-        // Get number of customers who placed orders
+        
         const numberOfCustomers = await User.countDocuments();
 
-        // Convert numbers to fixed 2 decimal places
+        
         const totalRevenue = (totalRevenueResult[0]?.totalRevenue || 0).toFixed(2);
         const totalDiscount = (totalDiscountResult[0]?.totalDiscount || 0).toFixed(2);
         const couponDiscount = (couponDiscountResult[0]?.couponDiscount || 0).toFixed(2);
 
-        // Render sales page with filtered data
+        
         res.render("admin/salesPage", {
             currentPage: "sales",
             totalRevenue,
             totalDiscount,
             totalOrders,
-            orders: deliveredOrders, // Only show orders with delivered items
+            orders: deliveredOrders, 
             activeOrders,
             cancelledOrders,
             completedOrders,
             returnedOrders,
             couponDiscount,
             numberOfCustomers,
+            startDate,    
+            endDate       
         });
 
     } catch (error) {
@@ -792,16 +796,16 @@ const pageError = async (req, res) => {
             }
         }
 
-        // Fetch only orders that have at least one delivered item
+        
         const orders = await Order.aggregate([
             {
                 $match: {
                     createdAt: { $gte: startDay, $lte: endDay },
-                    "orderedItems.status": "Delivered", // Ensures at least one delivered item
+                    "orderedItems.status": "Delivered",
                 },
             },
-            { $unwind: "$orderedItems" }, // Separate ordered items
-            { $match: { "orderedItems.status": "Delivered" } }, // Only keep delivered items
+            { $unwind: "$orderedItems" }, 
+            { $match: { "orderedItems.status": "Delivered" } }, 
             {
                 $lookup: {
                     from: "products",
@@ -852,6 +856,8 @@ const pageError = async (req, res) => {
             couponDiscount: couponDiscount.toFixed(2),
             couponsApplied,
             totalOrders: orders.length,
+            startDate,    
+            endDate 
         });
     } catch (error) {
         console.error("Error in filtering sales report:", error);
@@ -875,19 +881,19 @@ const pageError = async (req, res) => {
         const startDay = new Date(startDate);
         const endDay = new Date(endDate);
         
-        // Ensure endDay covers the full day
+        
         endDay.setHours(23, 59, 59, 999);
 
         if (isNaN(startDay.getTime()) || isNaN(endDay.getTime())) {
             throw new Error("Invalid date format. Please use 'YYYY-MM-DD'.");
         }
 
-        // Fetch only orders that have at least one delivered item
+        
         const orders = await Order.find({
             createdAt: { $gte: startDay, $lte: endDay },
-            "orderedItems.status": "Delivered", // Ensures at least one delivered item
+            "orderedItems.status": "Delivered",
         })
-        .populate('user', 'name email phone') // Fetch user details
+        .populate('user', 'name email phone') 
         .sort({ createdAt: -1 });
 
         return orders;
@@ -909,7 +915,7 @@ const pageError = async (req, res) => {
         })
         .populate({
             path: "orderedItems.product",
-            select: "name" // ✅ Ensure we fetch the product name
+            select: "name" // 
         })
         .populate("user", "name email phone")
         .sort({ createdAt: -1 });
@@ -946,18 +952,18 @@ const pageError = async (req, res) => {
             totalCouponDiscount += order.couponDiscount ?? 0;
         });
 
-        // 🔹 Add Summary Section (like PDF)
+        
         worksheet.addRow([]);
         worksheet.addRow([`Total Delivered Orders:`, totalDeliveredOrders]);
         worksheet.addRow([`Total Amount:`, `₹${totalRevenue.toFixed(2)}`]);
         worksheet.addRow([`Total Coupon Discount:`, `₹${totalCouponDiscount.toFixed(2)}`]);
-        worksheet.addRow([]); // Blank row for spacing
+        worksheet.addRow([]); 
 
         worksheet.getRow(5).font = { bold: true };
         worksheet.getRow(6).font = { bold: true };
         worksheet.getRow(7).font = { bold: true };
 
-        // 🔹 Column Headers
+       
         worksheet.addRow([
             'Order ID',
             'Date',
@@ -1003,7 +1009,7 @@ const pageError = async (req, res) => {
         res.end();
     } catch (error) {
         console.error("❌ Error in downloading excel report:", error);
-        res.status(500).send("Error generating report");
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send("Error generating report");
     }
 };
 
@@ -1109,7 +1115,7 @@ const pageError = async (req, res) => {
         doc.end();
     } catch (error) {
         console.error("Error generating PDF report:", error.message);
-        res.status(500).send("Error generating report");
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send("Error generating report");
     }
 };
 

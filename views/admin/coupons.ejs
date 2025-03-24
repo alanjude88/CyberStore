@@ -50,6 +50,31 @@
         </div>
     </div>
 </div>
+<!-- Pagination Controls -->
+<div class="pagination mt-4 d-flex justify-content-center">
+    <% if (currentPage > 1) { %>
+        <a href="?page=<%= currentPage - 1 %>" class="btn btn-primary mx-1">&laquo; Previous</a>
+    <% } %>
+
+    <% 
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+    %>
+
+    <% for (let i = startPage; i <= endPage; i++) { %>
+        <a href="?page=<%= i %>" class="btn btn-primary mx-1 <%= currentPage === i ? 'active' : '' %>"><%= i %></a>
+    <% } %>
+
+    <% if (currentPage < totalPages) { %>
+        <a href="?page=<%= currentPage + 1 %>" class="btn btn-primary mx-1">Next &raquo;</a>
+    <% } %>
+</div>
+
 
 <style>
     body {
@@ -166,6 +191,23 @@
     .container-fluid {
         padding: 20px;
     }
+    .pagination a {
+    padding: 8px 16px;
+    border-radius: 5px;
+    margin: 0 5px;
+    text-decoration: none;
+}
+
+.pagination a.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.pagination a:hover {
+    background-color: #00a1cc;
+    color: white;
+}
+
 </style>
 
 

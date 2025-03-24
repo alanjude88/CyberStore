@@ -8,6 +8,7 @@ const Wallet = require("../../Models/walletModel");
 const Address = require("../../Models/addressModel");
 const Wishlist = require("../../Models/wishlistModel");
 const mongoose = require("mongoose");
+const StatusCodes = require('../../util/statusCodes');
 
 //function to calculate discount
 function calculateDiscount(realPrice, salePrice) {
@@ -27,7 +28,7 @@ const loadShop = async (req, res) => {
     const maxPrice = parseInt(req.query.maxPrice) || 500000;
     const searchWord = req.query.searchWord ? req.query.searchWord.trim() : "";
 
-    // Get selected filters from query params
+ 
     const selectedCategories = Array.isArray(req.query.categories)
       ? req.query.categories
       : req.query.categories
@@ -40,7 +41,7 @@ const loadShop = async (req, res) => {
       ? [req.query.brands]
       : [];
 
-    // Base query conditions
+    
     let queryConditions = [
       { isBlocked: false },
       {
@@ -58,7 +59,7 @@ const loadShop = async (req, res) => {
       queryConditions.push({ brand: { $in: selectedBrands } });
     }
 
-    // Handle searchWord and match it with products, brands, and categories
+    
     if (searchWord) {
       const [categoryIds, brandIds] = await Promise.all([
         Category.find({ name: { $regex: searchWord, $options: "i" } }).distinct("_id"),
@@ -77,7 +78,7 @@ const loadShop = async (req, res) => {
 
     let query = { $and: queryConditions };
 
-    // Define sorting options
+    
     const sortOptions = {
       priceLowHigh: { salePrice: 1 },
       priceHighLow: { salePrice: -1 },
@@ -89,7 +90,7 @@ const loadShop = async (req, res) => {
 
     let sortCriteria = sortOptions[sortBy] || { createdAt: -1 };
 
-    // Fetch all required data concurrently
+    
     const results = await Promise.allSettled([
       User.findById(userId),
       Cart.findOne({ userId }),
@@ -106,7 +107,7 @@ const loadShop = async (req, res) => {
       userId ? Wishlist.findOne({ userId }) : null,
     ]);
 
-    // Extract values safely
+    
     const [
       userData,
       userCart,
@@ -118,29 +119,29 @@ const loadShop = async (req, res) => {
       userWishlist,
     ] = results.map((result) => (result.status === "fulfilled" ? result.value : null));
 
-    // Redirect if requested page is out of range
+    
     if (page > Math.ceil(totalProducts / limit) && totalProducts > 0) {
       return res.redirect(`/shop?page=${Math.ceil(totalProducts / limit)}`);
     }
 
-    // Get cart count
+    
     const cartCount = userCart ? userCart.items.length : 0;
 
-    // Fetch best-selling products
+    
     const bestSellerProducts = bestSellers.length
       ? await Product.find({ _id: { $in: bestSellers.map((product) => product._id) } })
       : [];
 
-    // Calculate discount for each product
+    
     products.forEach((product) => {
       product.discountPercentage = calculateDiscount(product.realPrice, product.salePrice);
       product.discountAmount = (product.realPrice - product.salePrice).toFixed(2);
     });
 
-    // Get wishlist products
+    
     const wishListProducts = userWishlist ? userWishlist.products.map((item) => item.productId) : [];
 
-    // Render shop page with all data
+    
     res.render("users/shop", {
       user: userData,
       products,

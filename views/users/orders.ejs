@@ -81,8 +81,34 @@
 }
 
 .retry:hover {
-    background-color: #cc0000; /* Darker red on hover */
+    background-color: #cc0000;
 }
+.pagination {
+    display: flex;
+    justify-content: center; 
+    margin-top: 20px;
+}
+
+.pagination a {
+    margin: 0 5px;
+    padding: 8px 12px;
+    text-decoration: none;
+    background-color: #6e3bbb;
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.pagination a.active {
+    background-color: #4CAF50;
+}
+
+.pagination a:hover {
+    background-color: #4CAF50;
+}
+
+
+
 </style>
 
 <div class="orders-page">
@@ -102,7 +128,7 @@
                             </div>
                             <div class="actions">
                                 <button class="view" onclick="viewOrder('<%= order.orderId %>')">View</button>
-                                <% if (item.status !== 'Delivered' && item.status !== 'Returned' && item.status !== 'Cancelled') { %>
+                                <% if (order.overallPaymentStatus !== 'Failed' && item.status !== 'Delivered' && item.status !== 'Returned' && item.status !== 'Cancelled') { %>
                                     <button class="cancel" onclick="cancelOrder('<%= order.orderId %>', '<%= item._id %>')">Cancel</button>
                                 <% } %>
                                 <% if (item.status === 'Delivered') { %>
@@ -123,6 +149,19 @@
         <p>No orders found.</p>
     <% } %>
 </div>
+<div class="pagination">
+    <% if (currentPage > 1) { %>
+      <a href="/profile/orders?page=<%= currentPage - 1 %>">Previous</a>
+    <% } %>
+  
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <a href="/profile/orders?page=<%= i %>" class="<%= currentPage === i ? 'active' : '' %>"><%= i %></a>
+    <% } %>
+  
+    <% if (currentPage < totalPages) { %>
+      <a href="/profile/orders?page=<%= currentPage + 1 %>">Next</a>
+    <% } %>
+  </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

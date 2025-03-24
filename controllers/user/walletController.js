@@ -2,14 +2,13 @@ const Order = require('../../Models/orderModel');
 const Wallet = require('../../Models/walletModel');
 const User = require('../../Models/userModel');
 const { v4: uuidv4 } = require('uuid');
+const StatusCodes = require('../../util/statusCodes');
 
 //function to load wallet
 
 
 const getWalletPage = async (req, res) => {
     try {
-        
-        // const userId = req.session.user._id;
         const userId = req.session.user;
         let wallet = await Wallet.findOne({ userId });
 
@@ -18,24 +17,44 @@ const getWalletPage = async (req, res) => {
                 userId,
                 balance: 0,
                 walletHistory: [{
-                    transactionId: uuidv4(), 
+                    transactionId: uuidv4(),
                     transactionType: 'credit',
                     amount: 0,
-                    description: 'Add to Wallet' 
+                    description: 'Add to Wallet'
                 }]
             });
 
             console.log('New wallet:', wallet);
-            
             await wallet.save();
         }
 
-        res.render('users/wallet', { wallet,user:userId });
+        // Pagination Logic
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 5; 
+        const skip = (page - 1) * limit;
+
+        const totalTransactions = wallet.walletHistory.length;
+        const transactions = wallet.walletHistory
+            .slice()
+            .reverse() 
+            .slice(skip, skip + limit);
+
+        const totalPages = Math.ceil(totalTransactions / limit);
+
+        res.render('users/wallet', { 
+            wallet, 
+            user: userId, 
+            transactions, 
+            currentPage: page, 
+            totalPages 
+        });
+
     } catch (error) {
         console.error('Error loading wallet page:', error);
-        res.status(500).send({ message: 'Error loading wallet page' });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Error loading wallet page' });
     }
 };
+
 
 
 //function to add money
@@ -65,22 +84,22 @@ const addMoneyToWallet = async (req, res) => {
         console.log('Wallet-------------:', wallet);
         
         await wallet.save();
-        res.status(200).json({ success: true, balance: wallet.balance });
+        res.status(StatusCodes.SUCCESS).json({ success: true, balance: wallet.balance });
     } catch (error) {
         console.error('Error adding money to wallet:', error);
-        res.status(500).json({ success: false, message: 'Error adding money' });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Error adding money' });
     }
 };
 
 
-//function to get balance
+
 const getWalletBalance = async (userId) => {
     const wallet = await Wallet.findOne({ userId });
     return wallet ? wallet.balance : 0;
 };
 
 
-//function to check balance
+
 const checkWalletBalance = async (userId, amount) => {
     const wallet = await Wallet.findOne({ userId });
     return wallet && wallet.balance >= amount;

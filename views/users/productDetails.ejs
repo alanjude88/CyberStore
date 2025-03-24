@@ -406,6 +406,7 @@
 <script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script>
 <!-- Include Panzoom Script -->
 <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.0.0/dist/panzoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -452,43 +453,46 @@
 
 
     <script> 
-    document.getElementById('addToCartBtn').addEventListener('click',function(){
-        const form = document.getElementById('add-to-cart-form')
-        const formData = new FormData(form)
-        const data = Object.fromEntries(formData.entries())
-        fetch('/cart/addItem', { 
+   document.getElementById('addToCartBtn').addEventListener('click', async function (e) {
+    e.preventDefault();  // Prevent form submission and refresh
+    const form = document.getElementById('add-to-cart-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const response = await fetch('/cart/addItem', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data) 
-        })
-        .then(response => response.json())
-        .then(data=>{
-            if(data.success){
-                Swal.fire({ 
-                    title: 'Success',
-                    text: 'Item added to cart',
-                    icon: 'success', 
-                    confirmButtonText: 'OK' 
-                })
-            }else{ 
-                Swal.fire({ 
-                    title: 'Error',
-                    text: 'Failed to add item to cart: ' + data.message,
-                    icon: 'error', 
-                    confirmButtonText: 'OK' 
-                })
-            } 
-        })
-        .catch(error => {
-            console.error('Error:', error); 
+        });
+
+        const result = await response.json();
+        
+        if (result.success) { 
             Swal.fire({ 
-                title: 'Error', 
-                text: 'An error occurred while adding the item to cart', 
+                title: 'Success',
+                text: result.message, 
+                icon: 'success', 
+                confirmButtonText: 'OK' 
+            });
+        } else { 
+            Swal.fire({ 
+                title: 'Error',
+                text: result.message,
                 icon: 'error', 
                 confirmButtonText: 'OK' 
-                }); 
-            }); 
+            });
+        } 
+    } catch (error) {
+        console.error('Error:', error); 
+        Swal.fire({ 
+            title: 'Error', 
+            text: 'An error occurred while adding the item to cart', 
+            icon: 'error', 
+            confirmButtonText: 'OK' 
         }); 
+    }
+});
     </script>
 
     <script src="path/to/jquery.min.js"></script>

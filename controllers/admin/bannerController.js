@@ -1,13 +1,14 @@
 const Banner = require('../../Models/bannerModel');
 const path = require('path');
 const fs = require('fs');
+const StatusCodes = require('../../util/statusCodes');
 
 const loadBanners = async (req, res) => {
     try {
         const banners = await Banner.find({});
         res.render('admin/banners', {
             banners: banners,
-            currentPage: 'banners'  // Pass the current page
+            currentPage: 'banners'  
         });
     } catch (error) {
         console.error('Error while loading banners', error);
@@ -24,7 +25,7 @@ const addNewBanner = async (req, res) => {
             link: req.body.link,
             startDate: req.body.startDate,
             endDate: req.body.endDate,
-            isActive: false // Default to inactive
+            isActive: false 
         });
         await banner.save();
         res.redirect('/admin/banners');

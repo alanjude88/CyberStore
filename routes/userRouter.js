@@ -144,7 +144,7 @@ router.post('/verifyCoupon', isLogAuth, couponController.verifyCoupon);
 router.post('/applyCoupon',isLogAuth, cartController.applyCoupon);
 router.get("/available-coupons", async (req, res) => {
     try {
-      const coupons = await Coupon.find({ isListed: true }); // Fetch only listed coupons
+      const coupons = await Coupon.find({ isListed: true });
       res.json(coupons);
     } catch (error) {
       console.error("Error fetching coupons:", error);

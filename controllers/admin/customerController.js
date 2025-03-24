@@ -1,13 +1,14 @@
 const User = require('../../Models/userModel');
+const StatusCodes = require('../../util/statusCodes');
 
 const loadUsers = async (req, res) => {
     try {
-        let search = req.query.search || ""; // Get search query if present
+        let search = req.query.search || ""; 
         let page = parseInt(req.query.page) || 1;
-        let status = req.query.status || ""; // Get status filter if present
+        let status = req.query.status || ""; 
         const limit = 5;
 
-        // Query to find the user matching the search
+        
         let matchedUser = null;
         if (search) {
             matchedUser = await User.findOne({
@@ -16,7 +17,7 @@ const loadUsers = async (req, res) => {
             });
         }
 
-        // Base query for paginated users
+        
         const filter = {
             isAdmin: false,
             $or: [
@@ -25,14 +26,14 @@ const loadUsers = async (req, res) => {
             ],
         };
 
-        // Apply status filter if provided
+       
         if (status === "active") {
             filter.isBlocked = false;
         } else if (status === "blocked") {
             filter.isBlocked = true;
         }
 
-        // Exclude the matched user's ID from the pagination query
+        
         if (matchedUser) {
             filter._id = { $ne: matchedUser._id };
         }
@@ -45,7 +46,7 @@ const loadUsers = async (req, res) => {
         const count = await User.countDocuments(filter);
         const totalPages = Math.ceil(count / limit);
 
-        // Prepend the matched user to the results if found
+       
         if (matchedUser) {
             users.unshift(matchedUser);
         }
@@ -56,13 +57,13 @@ const loadUsers = async (req, res) => {
             totalPages: totalPages,
             page: page,
             search: search,
-            status: status, // Pass the selected status to the front-end
+            status: status, 
             layout: 'layouts/admin/layout',
         });
 
     } catch (error) {
         console.error('Error in loadUsers:', error);
-        res.status(500).render('admin/error', { error: 'Internal Server Error' });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('admin/error', { error: 'Internal Server Error' });
     }
 };
 
@@ -71,7 +72,7 @@ const loadUsers = async (req, res) => {
 const blockCustomer = async (req, res) => {
     try {
         const userId = req.query.id;
-        // await User.findByIdAndUpdate(userId, { isBlocked: true });
+        
         await User.updateOne({_id:userId},{$set:{isBlocked:true}})
         res.redirect('/admin/users');
     } catch (error) {
@@ -84,7 +85,7 @@ const unBlockCustomer = async (req, res) => {
     try {
         const userId = req.query.id;
         await User.updateOne({_id:userId},{$set:{isBlocked:false}})
-        // await User.findByIdAndUpdate(userId, { isBlocked: false });
+        
         res.redirect('/admin/users');
     } catch (error) {
         console.error('Error in unBlockCustomer:', error);
@@ -97,11 +98,11 @@ const deleteCustomer = async (req, res) => {
         const userId = req.query.id;
 
         if (!userId) {
-            return res.status(400).render('admin/error', { error: 'Invalid User ID' });
+            return res.status(StatusCodes.BAD_REQUEST).render('admin/error', { error: 'Invalid User ID' });
         }
 
-        await User.deleteOne({ _id: userId }); // Deletes the user from the database
-        res.redirect('/admin/users'); // Redirect back to the users page
+        await User.deleteOne({ _id: userId }); 
+        res.redirect('/admin/users'); 
     } catch (error) {
         console.error('Error in deleteCustomer:', error);
         res.redirect('/pageError');
