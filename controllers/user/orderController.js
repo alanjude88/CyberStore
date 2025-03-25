@@ -373,7 +373,7 @@ const cancelOrder = async (req, res) => {
     const { orderId, itemId } = req.body;
     console.log("🔍 Cancel Order Request Received:", { orderId, itemId });
 
-    // ✅ Ensure `orderId` is treated as a string
+    
     const order = await Order.findOne({ orderId: orderId.toString() }).populate("orderedItems.product");
 
     if (!order) {

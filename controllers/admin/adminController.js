@@ -323,7 +323,7 @@ const pageError = async (req, res) => {
         {
           $group: {
             _id: null,
-            totalCancelledItems: { $sum: "$orderedItems.quantity" }, s
+            totalCancelledItems: { $sum: "$orderedItems.quantity" }, 
           },
         },
       ]);
